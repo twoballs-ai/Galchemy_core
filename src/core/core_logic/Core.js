@@ -2,18 +2,21 @@ import { GraphicalContext } from './GraphicalContext.js';
 import { GameTypeFactory } from './GameTypeFactory.js';
 import { ColorMixin } from './ColorMixin.js';
 import { Highlighter } from './utils/Highlighter.js';
-import { PreviewMode } from '../core_logic/RenderMode/mode/PreviewMode.js';
-import { FullPreviewMode } from '../core_logic/RenderMode/mode/FullPreviewMode.js';
-import { GameMode } from '../core_logic/RenderMode/mode/GameMode.js';
-import { EditorMode } from '../core_logic/RenderMode/mode/EditorMode.js';
+import { EventEmitter } from './utils/EventEmitter.js'; // <-- Добавили
+import { SceneManager } from './SceneManager.js';
+
 export class Core {
+  
   constructor({ canvasId, renderType = '2d', backgroundColor = 'black', sceneManager, width = 900, height = 600 }) {
     this.renderType = renderType;
     const normalizedBackgroundColor = ColorMixin(backgroundColor, renderType);
 
     this.graphicalContext = new GraphicalContext(canvasId, renderType, normalizedBackgroundColor, width, height);
     this.renderer = this.graphicalContext.getRenderer();
-    this.sceneManager = sceneManager;
+    this.emitter = new EventEmitter(); // Создаём эмиттер сразу тут
+
+    // 👇 Создаём SceneManager прямо здесь и передаём ему emitter
+    this.sceneManager = new SceneManager(this.emitter);
 
     this.currentMode = null; // Текущий режим
     this.lastTime = 0;
@@ -21,33 +24,34 @@ export class Core {
     this.animationFrameId = null;
     this.gameTypeInstance = null;
     this.selectedObject = null; // Текущий выделенный объект
+
   }
 
   // Переключение между режимами
-  switchMode(ModeClass, ...args) {
-    if (this.currentMode) {
-      this.currentMode.stop();
-    }
-    this.currentMode = new ModeClass(this, ...args);
-    this.currentMode.start();
+switchMode(ModeClass, ...args) {
+  if (this.currentMode) {
+    this.previousMode = this.currentMode;
+    this.currentMode.stop();
   }
+  this.currentMode = new ModeClass(this, ...args);
+  this.currentMode.start();
+  this.emitter.emit('modeChanged', { mode: ModeClass.name });
+}
 
-  // Изменение размеров канваса
   resize(width, height) {
     if (this.graphicalContext) {
       this.graphicalContext.resize(width, height);
       this.renderer.clear();
       this.sceneManager.render(this.renderer.context);
-      console.log(`Core resized to: ${width}x${height}`);
+      this.emitter.emit('resize', { width, height }); // событие изменения размера
     }
   }
 
-  // Установка выделенного объекта
   setSelectedObject(object) {
     this.selectedObject = object;
-    this.render(); // Перерисовываем сцену с новым выделением
+    this.render();
+    this.emitter.emit('objectSelected', { object }); // событие выбора объекта
   }
-
   // Установка типа игры через фабрику
   setGameType(gameType) {
     if (gameType) {
@@ -109,17 +113,23 @@ export class Core {
   }
 
   // Рендеринг текущего состояния (неявно используется режимами)
-  render() {
-    this.renderer.clear();
-    this.sceneManager.render(this.renderer.context);
+// ставьте true при отладке
 
-    if (this.selectedObject) {
-      Highlighter.highlightObject(
-        this.renderer.context,
-        this.selectedObject,
-        'purple',
-        'rgba(200, 100, 255, 0.2)'
-      );
-    }
+render() {
+  this.renderer.clear();
+  this.sceneManager.render(this.renderer.context);
+
+  if (this.selectedObject) {
+    Highlighter.highlightObject(
+      this.renderer.context,
+      this.selectedObject,
+      'purple',
+      'rgba(200, 100, 255, 0.2)'
+    );
   }
+
+
+    console.log('Отрендерено');
+ 
+}
 }

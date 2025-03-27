@@ -1,19 +1,16 @@
 // SceneManager.js
 export class SceneManager {
-  constructor() {
-    this.scenes = {};
+  constructor(emitter) { // <-- принимает emitter
+    this.scenes = new Map();
+
     this.currentScene = null;
+    this.emitter = emitter; // <-- сохранили emitter
   }
 
-  createScene(...names) {
-    names.forEach((name) => {
-      if (!this.scenes[name]) {
-        this.scenes[name] = { name, gameObjects: [] };
-        console.log(`Сцена "${name}" создана.`);
-      } else {
-        console.warn(`Сцена "${name}" уже существует.`);
-      }
-    });
+  createScene(name) {
+    if (!this.scenes.has(name)) {
+      this.scenes.set(name, { name, gameObjects: new Map() });
+    }
   }
 
   changeScene(name) {
@@ -25,27 +22,26 @@ export class SceneManager {
     }
   }
 
-  addGameObjectToScene(sceneName, ...gameObjects) {
-    const scene = this.scenes[sceneName];
-    if (scene) {
-      gameObjects.forEach((obj) => {
-        console.log(obj)
-        if (!scene.gameObjects.includes(obj)) {
-          scene.gameObjects.push(obj);
-        } else {
-          console.warn(`Объект уже добавлен в сцену "${sceneName}".`);
-        }
-      });
-    } else {
-      console.error(`Невозможно добавить объект в несуществующую сцену: "${sceneName}".`);
+  addGameObjectToScene(sceneName, gameObject) {
+    const scene = this.scenes.get(sceneName);
+    if (scene && !scene.gameObjects.has(gameObject.id)) {
+      scene.gameObjects.set(gameObject.id, gameObject);
+    }
   }
- }
 
   update(deltaTime) {
     if (this.currentScene) {
       this.currentScene.gameObjects.forEach((object) => {
         if (typeof object.update === "function") {
+          const oldX = object.x, oldY = object.y;
           object.update(deltaTime);
+          if (object.x !== oldX || object.y !== oldY) {
+            this.emitter.emit('gameObjectUpdated', {
+              id: object.id,
+              x: object.x,
+              y: object.y
+            });
+          }
         }
       });
     }
@@ -97,14 +93,9 @@ export class SceneManager {
     return this.currentScene.gameObjects.filter((obj) => obj instanceof type);
   }
 
-  getGameObjectById(id) {
-    if (!this.currentScene) {
-      console.error("Текущая сцена не установлена.");
-      return null;
-    }
-    return this.currentScene.gameObjects.find((obj) => obj.id === id) || null;
-  }
-
+getGameObjectById(sceneName, id) {
+  return this.scenes.get(sceneName)?.gameObjects.get(id) || null;
+}
   clearScene(sceneName) {
     if (this.scenes[sceneName]) {
       this.scenes[sceneName].gameObjects = [];

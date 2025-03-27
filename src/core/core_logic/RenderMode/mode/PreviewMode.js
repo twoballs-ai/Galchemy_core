@@ -1,24 +1,30 @@
 import { BaseMode } from '../BaseMode.js';
+import { createAPI } from '../../../integration/apiFactory.js';
+import { runUserCode } from '../../../integration/userCodeRunner.js';
+import { EditorMode } from './EditorMode.js'; // Импортируйте, если нужен для проверки instanceof
 
 export class PreviewMode extends BaseMode {
-  constructor(core, levelName) {
+  constructor(core, levelName, userCode) {
     super(core);
     this.levelName = levelName;
+    this.userCode = userCode;  // <-- Принимаем сюда строку кода
   }
 
-  start() {
+  async start() {
     super.start();
 
-    // Очищаем текущую сцену
-    this.sceneManager.clearScene(this.levelName);
-
-    // Переходим к новой сцене
+    // Очищаем и переключаемся на нужную сцену
+    // this.sceneManager.clearScene(this.levelName);
     this.sceneManager.changeScene(this.levelName);
 
-    // Подготавливаем сцену для предпросмотра
+    // Если есть пользовательский код, запускаем
+    if (this.userCode) {
+      const api = createAPI({ core: this.core });
+      await runUserCode(this.userCode, api, this.core.emitter);
+    }
+
     this.preparePreview();
-    
-    console.log(`Previewing level: ${this.levelName}`);
+    console.log("запущен превью");
   }
 
   preparePreview() {
@@ -31,21 +37,21 @@ export class PreviewMode extends BaseMode {
       }
     });
   }
+
   update(deltaTime) {
     this.core.sceneManager.update(deltaTime);
-
-    // Обновляем глобальную логику предпросмотра, если она есть
+    // Если есть глобальная логика
     if (this.core.logicSystem) {
       this.core.logicSystem.update(deltaTime);
     }
   }
 
   render() {
-    console.log("2222222222222222222222222222222222")
+    console.log("2222222222222222222222222222222222");
     this.core.renderer.clear();
     this.core.sceneManager.render(this.core.renderer.context);
 
-    // Рендеринг индикатора предпросмотра
+    // Отрисовка индикатора предпросмотра
     const ctx = this.core.renderer.context;
     ctx.save();
     ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
@@ -56,10 +62,9 @@ export class PreviewMode extends BaseMode {
 
   stop() {
     super.stop();
-  
     console.log(`Stopped previewing level: ${this.levelName}`);
-  
-    // Восстанавливаем предыдущую сцену (например, сцену редактора)
+
+    // Пример возврата к EditorMode
     if (this.core.previousMode instanceof EditorMode) {
       this.sceneManager.changeScene(this.core.previousMode.levelName);
     }
