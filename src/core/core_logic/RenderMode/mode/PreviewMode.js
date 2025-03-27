@@ -1,3 +1,4 @@
+// PreviewMode.js
 import { BaseMode } from '../BaseMode.js';
 import { createAPI } from '../../../integration/apiFactory.js';
 import { runUserCode } from '../../../integration/userCodeRunner.js';
@@ -32,11 +33,10 @@ export class PreviewMode extends BaseMode {
     objects.forEach((object) => {
       if (typeof object.prepareForPreview === 'function') {
         object.prepareForPreview();
-      } else {
-        console.warn(`Object "${object.id}" does not support prepareForPreview.`);
       }
     });
   }
+
 
   update(deltaTime) {
     this.core.sceneManager.update(deltaTime);
@@ -49,7 +49,7 @@ export class PreviewMode extends BaseMode {
   render() {
     console.log("2222222222222222222222222222222222");
     this.core.renderer.clear();
-    this.core.sceneManager.render(this.core.renderer.context);
+    this.sceneManager.render(this.core.renderer.context);
 
     // Отрисовка индикатора предпросмотра
     const ctx = this.core.renderer.context;

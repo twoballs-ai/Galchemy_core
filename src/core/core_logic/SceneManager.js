@@ -48,37 +48,20 @@ export class SceneManager {
   }
 
   render(context) {
+    if (!this.currentScene) return;
 
-    if (this.currentScene) {
-      const sortedGameObjects = this.currentScene.gameObjects.sort((a, b) => a.layer - b.layer);
-      console.log(`Рендеринг сцены "${this.currentScene.name}" с объектами:`, sortedGameObjects);
+    const sortedGameObjects = this.currentScene.gameObjects.sort((a, b) => a.layer - b.layer);
+    console.log(`Рендеринг сцены "${this.currentScene.name}" с объектами:`, sortedGameObjects);
 
-      // Рендерим каждый объект
-      sortedGameObjects.forEach((object) => {
-        if (typeof object.render === "function") {
-          object.render(context);
-        }
-      });
-    }
+    sortedGameObjects.forEach((object) => {
+      if (typeof object.render === "function") {
+        object.render(context);
+      }
+    });
   }
 
   getCurrentScene() {
     return this.currentScene;
-  }
-
-  removeGameObjectFromScene(sceneName, gameObject) {
-    const scene = this.scenes[sceneName];
-    if (scene) {
-      const index = scene.gameObjects.indexOf(gameObject);
-      if (index !== -1) {
-        scene.gameObjects.splice(index, 1);
-        console.log(`Объект удален из сцены "${sceneName}".`);
-      } else {
-        console.warn(`Объект не найден в сцене "${sceneName}".`);
-      }
-    } else {
-      console.error(`Сцена "${sceneName}" не существует.`);
-    }
   }
 
   getGameObjectsFromCurrentScene() {
@@ -86,10 +69,7 @@ export class SceneManager {
   }
 
   getGameObjectsByType(type) {
-    if (!this.currentScene) {
-      console.error("Текущая сцена не установлена.");
-      return [];
-    }
+    if (!this.currentScene) return [];
     return this.currentScene.gameObjects.filter((obj) => obj instanceof type);
   }
 
@@ -97,12 +77,12 @@ getGameObjectById(sceneName, id) {
   return this.scenes.get(sceneName)?.gameObjects.get(id) || null;
 }
   clearScene(sceneName) {
-    if (this.scenes[sceneName]) {
-      this.scenes[sceneName].gameObjects = [];
-      console.log(`Сцена "${sceneName}" очищена.`);
-    } else {
+    if (!this.scenes[sceneName]) {
       console.error(`Сцена "${sceneName}" не существует.`);
+      return;
     }
+    this.scenes[sceneName].gameObjects = [];
+    console.log(`Сцена "${sceneName}" очищена.`);
   }
 
   changeToNextScene() {
