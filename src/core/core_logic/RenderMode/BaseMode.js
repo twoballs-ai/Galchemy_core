@@ -6,7 +6,7 @@ export class BaseMode {
   }
 
   start() {
-    console.log(`${this.constructor.name} started.`);
+    console.log(`${this.constructor.name} начат.`);
   }
 
   stop() {
@@ -19,6 +19,7 @@ export class BaseMode {
   }
 
   render() {
+    console.log(`${this.constructor.name} rendered.`);
     // Общая логика рендеринга
     this.renderer.clear();
     this.sceneManager.render(this.renderer.context);

@@ -1,8 +1,8 @@
 {
-  "name": "tette-core",
+  "name": "game-alchemy-core",
   "version": "0.1.7",
-  "description": "Core functionality for the TETTE game framework.",
-  "main": "./dist/tette.bundle.js",
+  "description": "Core functionality for the Galchemy.js game framework.",
+  "main": "./dist/galchemy.bundle.js",
   "module": "./src/index.js",
   "scripts": {
     "build": "webpack --config webpack.config.js",

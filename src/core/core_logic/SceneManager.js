@@ -14,8 +14,8 @@ export class SceneManager {
   }
 
   changeScene(name) {
-    if (this.scenes[name]) {
-      this.currentScene = this.scenes[name];
+    if (this.scenes.has(name)) {
+     this.currentScene = this.scenes.get(name);
       console.log(`Переключено на сцену "${name}".`);
     } else {
       console.error(`Сцена "${name}" не существует.`);
@@ -50,11 +50,11 @@ export class SceneManager {
   render(context) {
     if (!this.currentScene) return;
 
-    const sortedGameObjects = this.currentScene.gameObjects.sort((a, b) => a.layer - b.layer);
-    console.log(`Рендеринг сцены "${this.currentScene.name}" с объектами:`, sortedGameObjects);
+    const gameObjectsArray = Array.from(this.currentScene.gameObjects.values());
+    const sortedGameObjects = gameObjectsArray.sort((a, b) => a.layer - b.layer);
 
     sortedGameObjects.forEach((object) => {
-      if (typeof object.render === "function") {
+      if (typeof object.render === 'function') {
         object.render(context);
       }
     });
@@ -77,11 +77,11 @@ getGameObjectById(sceneName, id) {
   return this.scenes.get(sceneName)?.gameObjects.get(id) || null;
 }
   clearScene(sceneName) {
-    if (!this.scenes[sceneName]) {
+    if (!this.scenes.has(sceneName)) {
       console.error(`Сцена "${sceneName}" не существует.`);
       return;
     }
-    this.scenes[sceneName].gameObjects = [];
+    this.scenes.get(sceneName).gameObjects = new Map();
     console.log(`Сцена "${sceneName}" очищена.`);
   }
 

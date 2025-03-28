@@ -47,7 +47,8 @@ export class PreviewMode extends BaseMode {
   }
 
   render() {
-    console.log("2222222222222222222222222222222222");
+    alert("Preview render called!") // или debugger;
+
     this.core.renderer.clear();
     this.sceneManager.render(this.core.renderer.context);
 

@@ -7,7 +7,7 @@ module.exports = [
     output: {
       path: path.resolve(__dirname, 'dist'),
       filename: 'tette.bundle.js',
-      library: 'TETTECore',
+      library: 'GalchemyCore',
       libraryTarget: 'umd',
       globalObject: 'this'
     },
@@ -32,8 +32,8 @@ module.exports = [
     entry: './src/index.js',
     output: {
       path: path.resolve(__dirname, 'dist'),
-      filename: 'tette.dev.js',
-      library: 'TETTECore',
+      filename: 'galchemy.dev.js',
+      library: 'GalchemyCore',
       libraryTarget: 'umd',
       globalObject: 'this'
     },

@@ -45,6 +45,7 @@ export class EditorMode extends BaseMode {
   }
 
   render() {
+    console.log("dddd")
     super.render();
     if (this.selectedObject) {
       Highlighter.highlightObject(

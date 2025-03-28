@@ -41,15 +41,15 @@ export class Core {
   }
 
   // Переключение между режимами
-switchMode(ModeClass, ...args) {
-  if (this.currentMode) {
-    this.previousMode = this.currentMode;
-    this.currentMode.stop();
+  switchMode(ModeClass, ...args) {
+    if (this.currentMode) {
+      this.previousMode = this.currentMode;
+      this.currentMode.stop();
+    }
+    this.currentMode = new ModeClass(this, ...args);
+    this.currentMode.start();
+    this.emitter.emit('modeChanged', { mode: ModeClass.name });
   }
-  this.currentMode = new ModeClass(this, ...args);
-  this.currentMode.start();
-  this.emitter.emit('modeChanged', { mode: ModeClass.name });
-}
 
   resize(width, height) {
     if (this.graphicalContext) {
