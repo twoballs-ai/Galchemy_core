@@ -1,34 +1,39 @@
 // Core.js
-import { ColorMixin } from './ColorMixin.js';
-import { GraphicalContext } from './GraphicalContext.js';
-import { GameTypeFactory } from './GameTypeFactory.js';
-import { Highlighter } from './utils/Highlighter.js';
-import { EventEmitter } from './utils/EventEmitter.js'; // <-- Добавили
-import { SceneManager } from './SceneManager.js';
+import { ColorMixin } from "./ColorMixin.js";
+import { GraphicalContext } from "./GraphicalContext.js";
+import { GameTypeFactory } from "./GameTypeFactory.js";
+import { Highlighter } from "./utils/Highlighter.js";
+import { EventEmitter } from "./utils/EventEmitter.js"; // <-- Добавили
+import { SceneManager } from "./SceneManager.js";
 
 export class Core {
-  
-  constructor({ canvasId, renderType = '2d', backgroundColor = 'black', sceneManager, width = 900, height = 600 }) {
+  constructor({
+    canvasId,
+    renderType = "2d",
+    backgroundColor = "black",
+    width = 900,
+    height = 600,
+  }) {
     this.renderType = renderType;
     const normalizedBackgroundColor = ColorMixin(backgroundColor, renderType);
     this.graphicalContext = new GraphicalContext(
-      canvasId, 
-      renderType, 
-      normalizedBackgroundColor, 
-      width, 
+      canvasId,
+      renderType,
+      normalizedBackgroundColor,
+      width,
       height
     );
     this.renderer = this.graphicalContext.getRenderer();
     this.emitter = new EventEmitter(); // Создаём эмиттер сразу тут
-
+    this.plugins = [];
     // 👇 Создаём SceneManager прямо здесь и передаём ему emitter
     this.sceneManager = new SceneManager(this.emitter);
-
+    this.debugRender = true;
     this.currentMode = null; // Текущий режим
     this.lastTime = 0;
 
     // Поддержка пользовательского кода
-    this.userLogic = null;  // Функция, которая вызывается на каждом кадре
+    this.userLogic = null; // Функция, которая вызывается на каждом кадре
 
     // Привязка игрового цикла
     this.loop = this.loop.bind(this);
@@ -37,7 +42,6 @@ export class Core {
     // Дополнительно (по вашему желанию)
     this.gameTypeInstance = null;
     this.selectedObject = null; // Текущий выделенный объект
-
   }
 
   // Переключение между режимами
@@ -48,22 +52,27 @@ export class Core {
     }
     this.currentMode = new ModeClass(this, ...args);
     this.currentMode.start();
-    this.emitter.emit('modeChanged', { mode: ModeClass.name });
+    this.emitter.emit("modeChanged", { mode: ModeClass.name });
+  }
+  // 🔧 Регистрируем плагин
+  registerPlugin(plugin) {
+    if (plugin && typeof plugin.install === "function") {
+      plugin.install(this); // передаём core внутрь плагина
+      this.plugins.push(plugin);
+    }
   }
 
-  resize(width, height) {
-    if (this.graphicalContext) {
-      this.graphicalContext.resize(width, height);
-      this.renderer.clear();
-      this.sceneManager.render(this.renderer.context);
-      this.emitter.emit('resize', { width, height }); // событие изменения размера
+  registerPlugin(plugin) {
+    if (plugin && typeof plugin.install === "function") {
+      plugin.install(this); // передаём core внутрь плагина
+      this.plugins.push(plugin);
     }
   }
 
   setSelectedObject(object) {
     this.selectedObject = object;
     this.render();
-    this.emitter.emit('objectSelected', { object }); // событие выбора объекта
+    this.emitter.emit("objectSelected", { object }); // событие выбора объекта
   }
   // Установка типа игры через фабрику
   setGameType(gameType) {
@@ -83,17 +92,22 @@ export class Core {
 
   // Запуск игрового цикла
   async start() {
-    if (typeof this.renderer.init === 'function') {
+    if (typeof this.renderer.init === "function") {
       await this.renderer.init();
     }
 
-    if (this.gameTypeInstance && typeof this.gameTypeInstance.start === 'function') {
+    if (
+      this.gameTypeInstance &&
+      typeof this.gameTypeInstance.start === "function"
+    ) {
       this.gameTypeInstance.start();
     }
 
     this.animationFrameId = requestAnimationFrame(this.loop);
   }
-
+  requestRender() {
+    this.render();
+  }
   // Главный цикл
   loop(timestamp) {
     const deltaTime = timestamp - this.lastTime;
@@ -109,12 +123,18 @@ export class Core {
           const objects = this.sceneManager.getGameObjectsFromCurrentScene();
           this.userLogic(objects, this, deltaTime);
         } catch (err) {
-          console.error('Ошибка в пользовательском коде:', err);
+          console.error("Ошибка в пользовательском коде:", err);
         }
       }
 
       // Рендер режима
-      this.currentMode.render();
+      if (
+        typeof this.currentMode.shouldRenderEachFrame === "function"
+          ? this.currentMode.shouldRenderEachFrame()
+          : true
+      ) {
+        this.currentMode.render();
+      }
     }
 
     this.animationFrameId = requestAnimationFrame(this.loop);
@@ -124,7 +144,7 @@ export class Core {
     if (this.animationFrameId) {
       cancelAnimationFrame(this.animationFrameId);
       this.animationFrameId = null;
-      console.log('Game loop stopped.');
+      console.log("Game loop stopped.");
     }
   }
 
@@ -134,44 +154,46 @@ export class Core {
       this.graphicalContext.resize(width, height);
       this.renderer.clear();
       this.sceneManager.render(this.renderer.context);
-      console.log(`Core resized to: ${width}x${height}`);
+      this.emitter.emit("resize", { width, height });
     }
-  }
-
-  // Установка выделенного объекта (для редактора)
-  setSelectedObject(object) {
-    this.selectedObject = object;
-    this.render();
   }
 
   // Пример метода update (необязательно использовать)
-  update(deltaTime) {
-    // Если есть что-то глобальное
-    if (this.gameTypeInstance && this.gameTypeInstance.update) {
-      this.gameTypeInstance.update(deltaTime);
+  // Вызываем все плагины с render hook
+  render() {
+    this.renderer.clear();
+    this.sceneManager.render(this.renderer.context);
+
+    // 🔄 рендер плагинов
+    this.plugins.forEach(plugin => {
+      if (typeof plugin.render === 'function') {
+        plugin.render(this.renderer.context, this.graphicalContext.canvas);
+      }
+    });
+
+    if (this.selectedObject) {
+      Highlighter.highlightObject(
+        this.renderer.context,
+        this.selectedObject,
+        'purple',
+        'rgba(200, 100, 255, 0.2)'
+      );
     }
+
+    console.log("dvdsvdv rendered.");
+  }
+
+  update(deltaTime) {
     this.sceneManager.update(deltaTime);
+
+    // 🔄 update плагинов
+    this.plugins.forEach(plugin => {
+      if (typeof plugin.update === 'function') {
+        plugin.update(deltaTime);
+      }
+    });
+
     this.render();
   }
 
-  // Рендеринг текущего состояния (неявно используется режимами)
-// ставьте true при отладке
-
-render() {
-  this.renderer.clear();
-  this.sceneManager.render(this.renderer.context);
-
-  if (this.selectedObject) {
-    Highlighter.highlightObject(
-      this.renderer.context,
-      this.selectedObject,
-      'purple',
-      'rgba(200, 100, 255, 0.2)'
-    );
-  }
-
-
-    console.log('Отрендерено');
- 
-}
 }

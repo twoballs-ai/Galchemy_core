@@ -1,13 +1,15 @@
-// EditorMode.js
-
 import { BaseMode } from '../BaseMode.js';
 import { Highlighter } from '../../../core_logic/utils/Highlighter.js';
+import { GridPlugin } from '../../../../plugins/GridPlugin.js';
 
 export class EditorMode extends BaseMode {
   constructor(core, onSelect) {
     super(core);
     this.selectedObject = null;
     this.onSelect = onSelect; // callback в React
+    // Создаем и регистрируем плагин сетки только для редактора
+    this.gridPlugin = GridPlugin({ cellSize: 50 });
+    this.core.registerPlugin(this.gridPlugin);
   }
 
   start() {
@@ -17,6 +19,8 @@ export class EditorMode extends BaseMode {
 
   stop() {
     this.removeEventListeners();
+    // Удаляем плагин сетки, чтобы при переходе в превью он исчезал
+    this.core.plugins = this.core.plugins.filter(p => p !== this.gridPlugin);
     super.stop();
   }
 
@@ -37,22 +41,20 @@ export class EditorMode extends BaseMode {
   selectObjectAt(x, y) {
     const objects = this.sceneManager.getGameObjectsFromCurrentScene();
     this.selectedObject = objects.find(obj => obj.containsPoint?.(x, y));
-
     if (this.onSelect) {
-      // Если объект есть, передаём его id; если нет – null
       this.onSelect(this.selectedObject ? this.selectedObject.id : null);
     }
   }
 
+  shouldRenderEachFrame() {
+    return false; // Рендерим по необходимости
+  }
+
   render() {
-    console.log("dddd")
+    console.log("EditorMode rendered.");
     super.render();
     if (this.selectedObject) {
-      Highlighter.highlightObject(
-        this.renderer.context,
-        this.selectedObject,
-        'blue'
-      );
+      Highlighter.highlightObject(this.core.renderer.context, this.selectedObject, 'blue');
     }
   }
 }

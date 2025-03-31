@@ -70,7 +70,7 @@ export class SceneManager {
 
   getGameObjectsByType(type) {
     if (!this.currentScene) return [];
-    return this.currentScene.gameObjects.filter((obj) => obj instanceof type);
+    return Array.from(this.currentScene.gameObjects.values()).filter((obj) => obj instanceof type);
   }
 
 getGameObjectById(sceneName, id) {

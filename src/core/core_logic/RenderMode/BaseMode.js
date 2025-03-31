@@ -19,7 +19,7 @@ export class BaseMode {
   }
 
   render() {
-    console.log(`${this.constructor.name} rendered.`);
+    // console.log(`${this.constructor.name} rendered.`);
     // Общая логика рендеринга
     this.renderer.clear();
     this.sceneManager.render(this.renderer.context);

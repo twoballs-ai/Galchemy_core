@@ -1,95 +1,105 @@
-Вот обновленная верcия документации, где указано, что TETTE Core — это ядро движка для создания игр на JavaScript, а фронтенд находится в отдельном репозитории.
+Ниже приведён обновлённый вариант документации, отражающий переименование проекта **TETTE Core** → **Galchemy Core**, а также указание на фронтенд в отдельном репозитории **Galchemy GUI**:
 
 ---
 
-# TETTE Core
+# Galchemy Core
 
-TETTE Core is the core part of a game engine for creating games and interactive applications in JavaScript. It provides powerful tools and flexibility for development and supports both WebGL and WebGPU, making it suitable for a wide range of gaming projects. TETTE Core can be used independently or integrated with a graphical user interface (GUI). For the full GUI experience, please check out our frontend at [TETTE_GUI](https://github.com/twoballs-ai/TETTE_GUI).
+**Galchemy Core** – это ядро движка для создания игр и интерактивных приложений на JavaScript. Оно предоставляет мощные инструменты и гибкость для разработки, поддерживает работу как с WebGL, так и с WebGPU, поэтому подходит для широкого спектра игровых проектов. Galchemy Core может использоваться самостоятельно или в сочетании с графическим интерфейсом (GUI). Для полноценной работы с визуальным редактором вы можете воспользоваться фронтендом в отдельном репозитории: [Galchemy_GUI](https://github.com/twoballs-ai/Galchemy_gui).
 
-> **Note**: The project is at an early stage of development and may currently contain significant shortcomings. We recommend waiting for a more stable release to avoid possible disappointment.
+> **Внимание**: проект находится на ранней стадии разработки и может содержать существенные недоработки. Рекомендуется дождаться более стабильного релиза, чтобы избежать разочарований.
 
-## Contents
-- [Installation](#installation)
-- [Usage](#usage)
-- [Scripts](#scripts)
-- [Project Structure](#project-structure)
-- [Development and Build](#development-and-build)
-- [License](#license)
+## Содержание
+- [Установка](#установка)
+- [Использование](#использование)
+- [Скрипты](#скрипты)
+- [Структура проекта](#структура-проекта)
+- [Разработка и сборка](#разработка-и-сборка)
+- [Лицензия](#лицензия)
 
-## Installation
+## Установка
 
-To install the package via npm, run the command:
+Чтобы установить пакет через npm, выполните команду:
 
 ```bash
-npm install tette-core
+npm install galchemy-core
 ```
 
-## Usage
+(Предполагается, что в будущих версиях пакет будет опубликован под именем **`galchemy-core`** в npm.)
 
-To use TETTE Core in your project, import it as follows:
+## Использование
+
+Чтобы использовать **Galchemy Core** в своём проекте, импортируйте его следующим образом:
 
 ```javascript
-import TetteCore from 'tette-core';
+import GalchemyCore from 'galchemy-core';
 
-// Usage example
-const game = new TetteCore.Game();
+// Пример использования
+const game = new GalchemyCore.Game();
 game.start();
 ```
 
-## Scripts
+*(Обратите внимание, что в зависимости от того, как вы организовали экспорт, реальное имя класса/функции может отличаться. В данном примере приведён условный вариант.)*
 
-### Building the Project
-To build the project, use Webpack. Run the following command to create a build:
+## Скрипты
+
+### Сборка проекта
+
+Для сборки проекта используется Webpack. Выполните следующую команду, чтобы собрать проект:
 
 ```bash
 npm run build
 ```
 
-### Additional Scripts
-- **Build**: `npm run build` — compiles the project and creates a minified bundle in the `dist` folder.
-- **Testing**: Testing can be added as needed.
+### Дополнительные скрипты
 
-## Project Structure
+- **build**: `npm run build` — компилирует проект и формирует минифицированный бандл в папке `dist`.
+- **test**: при необходимости можно добавить скрипты для тестирования (например, `npm run test`).
+
+## Структура проекта
 
 ```
-/dist                     # Compiled files
-/examples                 # Usage examples
-/src                      # Source code
-  /core                   # Core modules
-  /gameObjects            # Game objects and components
-  /gameTypePresets        # Game type presets
-  index.js                # Entry point
-/.babelrc                 # Babel configuration
-/webpack.config.js        # Webpack configuration
+/dist                     # Скомпилированные файлы
+/examples                 # Примеры использования
+/src                      # Исходный код
+  /core                   # Модули ядра
+  /gameObjects            # Игровые объекты и компоненты
+  /gameTypePresets        # Пресеты (шаблоны) игровых типов
+  index.js                # Точка входа
+/.babelrc                 # Конфигурация Babel
+/webpack.config.js        # Конфигурация Webpack
 ```
 
-## Development and Build
+## Разработка и сборка
 
-1. Clone the repository:
+1. Клонируйте репозиторий:
 
 ```bash
-git clone https://github.com/yourusername/tette-core.git
-cd tette-core
+git clone https://github.com/twoballs-ai/Galchemy_core.git
+cd Galchemy_core
 ```
 
-2. Install dependencies:
+2. Установите зависимости:
 
 ```bash
 npm install
 ```
 
-3. Run the build:
+3. Запустите сборку:
 
 ```bash
 npm run build
 ```
 
-4. If necessary, start the development server (e.g., using `webpack-dev-server` or `live-server` for examples).
+4. При необходимости, запустите локальный сервер разработки (например, `webpack-dev-server` или `live-server`) для просмотра примеров.
 
-## License
+## Лицензия
 
-This project is distributed under the MIT License. You can find the full text of the license in the [LICENSE](LICENSE) file.
+Проект распространяется под лицензией MIT. Полный текст лицензии можно найти в файле [LICENSE](LICENSE).
 
 ---
 
-This documentation now clearly states that TETTE Core is the core of a JavaScript game engine, and it points to the separate frontend repository at [TETTE_GUI](https://github.com/twoballs-ai/TETTE_GUI).
+**Новый репозиторий ядра:**  
+[https://github.com/twoballs-ai/Galchemy_core](https://github.com/twoballs-ai/Galchemy_core)
+
+**Новый репозиторий GUI:**  
+[https://github.com/twoballs-ai/Galchemy_gui](https://github.com/twoballs-ai/Galchemy_gui)

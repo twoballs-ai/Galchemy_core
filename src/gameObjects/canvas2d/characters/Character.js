@@ -1,3 +1,5 @@
+// core/gameObjects/Character.js
+
 import { RigidBody2d } from '../../../core/physics/RigidBody2d.js';
 
 export class Character {
@@ -6,7 +8,7 @@ export class Character {
     y,
     width,
     height,
-    color, // теперь можно игнорировать или не передавать цвет
+    color = 'transparent', 
     image,
     animations = {},
     health = 100,
@@ -14,7 +16,7 @@ export class Character {
     enablePhysics = false,
     layer = 1,
     preserveAspectRatio = false,
-    isAnimated = false, // true — использовать анимации, false — использовать спрайт (изображение)
+    isAnimated = false, 
   }) {
     this.x = x;
     this.y = y;
@@ -32,21 +34,18 @@ export class Character {
     this.elapsedTime = 0;
     this.facingDirection = 1;
 
-    // Если не используется анимация, загружаем статичное изображение.
     if (!this.isAnimated) {
       this.image = null;
       if (image) {
-          if (typeof image === 'string') {
-              this.image = new Image();
-              this.image.src = image;
-          } else if (image instanceof HTMLImageElement) {
-              this.image = image;
-          }
+        if (typeof image === 'string') {
+          this.image = new Image();
+          this.image.src = image;
+        } else if (image instanceof HTMLImageElement) {
+          this.image = image;
+        }
       }
-  }
+    }
 
-    // Если используется анимация, обрабатываем пути к кадрам.
-    // Если анимация не используется, оставляем пустые массивы.
     this.animations = {
       idle: this.isAnimated ? (animations.idle || []) : [],
       run: this.isAnimated ? (animations.run || []) : [],
@@ -55,7 +54,6 @@ export class Character {
     };
 
     if (this.isAnimated) {
-      // Преобразуем пути анимаций в объекты Image.
       for (const key in this.animations) {
         this.animations[key] = this.animations[key].map((src) => {
           const img = new Image();
@@ -72,10 +70,8 @@ export class Character {
       }
     }
 
-    // Устанавливаем текущую анимацию для анимированных персонажей.
     this.currentAnimation = this.isAnimated ? 'idle' : null;
 
-    // Если включена физика, создаём физическое тело.
     if (enablePhysics) {
       this.rigidBody = new RigidBody2d({
         mass: 1,
@@ -158,7 +154,6 @@ export class Character {
   render(context) {
     context.save();
 
-    // Обработка зеркального отображения (отражение по горизонтали).
     if (this.facingDirection === -1) {
       context.translate(this.x + this.width / 2, this.y);
       context.scale(-1, 1);
@@ -167,7 +162,6 @@ export class Character {
       context.translate(this.x, this.y);
     }
 
-    // Если не используется анимация – отрисовываем статичное изображение.
     if (!this.isAnimated && this.image && this.image.complete) {
       let renderWidth = this.width;
       let renderHeight = this.height;
@@ -181,9 +175,7 @@ export class Character {
         }
       }
       context.drawImage(this.image, 0, 0, renderWidth, renderHeight);
-    }
-    // Если используется анимация – отрисовываем текущий кадр.
-    else if (this.isAnimated) {
+    } else if (this.isAnimated) {
       const activeFrames = this.currentAnimation ? this.animations[this.currentAnimation] : [];
       if (activeFrames.length > 0 && activeFrames[this.currentFrameIndex].complete) {
         context.drawImage(activeFrames[this.currentFrameIndex], 0, 0, this.width, this.height);

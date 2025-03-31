@@ -1,6 +1,6 @@
 {
   "name": "game-alchemy-core",
-  "version": "0.1.7",
+  "version": "0.1.1",
   "description": "Core functionality for the Galchemy.js game framework.",
   "main": "./dist/galchemy.bundle.js",
   "module": "./src/index.js",
@@ -19,7 +19,7 @@
   "author": "Boris Bogatyrev",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/twoballs-ai/TETTE_CORE.git"
+    "url": "git+https://github.com/twoballs-ai/Galchemy_core.git"
   },
   "license": "MIT",
   "files": [

@@ -11,22 +11,27 @@ export class PreviewMode extends BaseMode {
     this.userCode = userCode;  // <-- Принимаем сюда строку кода
   }
 
-  async start() {
-    super.start();
+ async start() {
+  super.start();
+  this.sceneManager.changeScene(this.levelName);
 
-    // Очищаем и переключаемся на нужную сцену
-    // this.sceneManager.clearScene(this.levelName);
-    this.sceneManager.changeScene(this.levelName);
-
-    // Если есть пользовательский код, запускаем
-    if (this.userCode) {
-      const api = createAPI({ core: this.core });
-      await runUserCode(this.userCode, api, this.core.emitter);
+  this.handleKeyDown = (e) => {
+    if (e.key === 'Escape') {
+      console.log("ESC pressed. Emitting pointerLockExit.");
+      this.core.emitter.emit('pointerLockExit');
     }
+  };
+  window.addEventListener('keydown', this.handleKeyDown);
 
-    this.preparePreview();
-    console.log("запущен превью");
+  if (this.userCode) {
+    this.api = createAPI({ core: this.core });
+    await runUserCode(this.userCode, this.api, this.core.emitter);
   }
+
+  this.preparePreview();
+  console.log("запущен превью");
+}
+
 
   preparePreview() {
     const objects = this.sceneManager.getGameObjectsFromCurrentScene();
@@ -37,25 +42,41 @@ export class PreviewMode extends BaseMode {
     });
   }
 
-
+  shouldRenderEachFrame() {
+    return true;
+  }
   update(deltaTime) {
     this.core.sceneManager.update(deltaTime);
-    // Если есть глобальная логика
     if (this.core.logicSystem) {
       this.core.logicSystem.update(deltaTime);
+    }
+  
+    // 👇 Здесь вызываем update API (например, для управления)
+    if (this.api?.character) {
+      this.api.character.update();
     }
   }
 
   render() {
-    alert("Preview render called!") // или debugger;
+    // console.log("Preview render called!") // или debugger;
 
     this.core.renderer.clear();
     this.sceneManager.render(this.core.renderer.context);
 
-    // Отрисовка индикатора предпросмотра
     const ctx = this.core.renderer.context;
+  
+    // Заливаем весь канвас черным фоном
     ctx.save();
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+    ctx.fillStyle = 'black';
+    ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+    ctx.restore();
+  
+    // Отрисовываем объекты сцены (спрайты, игровые объекты)
+    this.sceneManager.render(ctx);
+  
+    // Отрисовка индикатора предпросмотра
+    ctx.save();
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.8)'; // Белый текст для контраста
     ctx.font = '20px Arial';
     ctx.fillText(`Preview Mode: ${this.levelName}`, 10, 30);
     ctx.restore();
@@ -63,11 +84,7 @@ export class PreviewMode extends BaseMode {
 
   stop() {
     super.stop();
+    window.removeEventListener('keydown', this.handleKeyDown);
     console.log(`Stopped previewing level: ${this.levelName}`);
-
-    // Пример возврата к EditorMode
-    if (this.core.previousMode instanceof EditorMode) {
-      this.sceneManager.changeScene(this.core.previousMode.levelName);
-    }
   }
 }
