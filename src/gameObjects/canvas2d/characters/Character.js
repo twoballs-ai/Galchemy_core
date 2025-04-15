@@ -4,6 +4,7 @@ import { RigidBody2d } from '../../../core/physics/RigidBody2d.js';
 
 export class Character {
   constructor({
+    id,
     x,
     y,
     width,
@@ -18,6 +19,7 @@ export class Character {
     preserveAspectRatio = false,
     isAnimated = false, 
   }) {
+    this.id = id,
     this.x = x;
     this.y = y;
     this.width = width;

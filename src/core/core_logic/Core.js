@@ -75,15 +75,16 @@ export class Core {
     this.emitter.emit("objectSelected", { object }); // событие выбора объекта
   }
   // Установка типа игры через фабрику
-  setGameType(gameType) {
+  setGameType(gameType, options = {}) {
     if (gameType) {
       console.log(`Setting game type: ${gameType}`);
-      this.gameTypeInstance = new GameTypeFactory(this).loadGameType(gameType);
+      this.gameTypeInstance = new GameTypeFactory(this).loadGameType(gameType, options);
       if (!this.gameTypeInstance) {
         console.error(`Error: game type ${gameType} not loaded.`);
       }
     }
   }
+  
 
   // Доступ к SceneManager
   getSceneManager() {

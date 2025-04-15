@@ -2,6 +2,7 @@ import { Canvas2dGameObject } from '../Canvas2dGameObject.js';
 
 export class SpriteGrid extends Canvas2dGameObject {
  constructor({
+  id,
     image,
     x,
     y,
@@ -17,6 +18,7 @@ export class SpriteGrid extends Canvas2dGameObject {
     layer = 0,
 }) {
     super({
+      id,
         x: x,
         y: y,
         width: width * repeatX + spacingX * (repeatX - 1),

@@ -48,11 +48,10 @@ export class Sprite extends Canvas2dGameObject {
   }
 
   render(context) {
-    // console.log(`Sprite rendered at: ${this.x}, ${this.y}`);
     if (this.image.complete) {
       let renderWidth = this.width;
       let renderHeight = this.height;
-
+  
       if (this.preserveAspectRatio) {
         const aspectRatio = this.image.width / this.image.height;
         if (this.width / this.height > aspectRatio) {
@@ -61,7 +60,7 @@ export class Sprite extends Canvas2dGameObject {
           renderHeight = this.width / aspectRatio;
         }
       }
-
+  
       context.drawImage(this.image, this.x, this.y, renderWidth, renderHeight);
     }
   }

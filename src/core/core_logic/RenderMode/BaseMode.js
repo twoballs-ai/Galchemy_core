@@ -17,7 +17,9 @@ export class BaseMode {
     // Общая логика обновления, если требуется
     this.sceneManager.update(deltaTime);
   }
-
+  shouldRenderEachFrame() {
+    return true;
+  }
   render() {
     // console.log(`${this.constructor.name} rendered.`);
     // Общая логика рендеринга

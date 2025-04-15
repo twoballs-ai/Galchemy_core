@@ -84,6 +84,29 @@ getGameObjectById(sceneName, id) {
     this.scenes.get(sceneName).gameObjects = new Map();
     console.log(`Сцена "${sceneName}" очищена.`);
   }
+  changeToFirstScene() {
+    const sceneNames = Array.from(this.scenes.keys());
+    if (sceneNames.length > 0) {
+      this.changeScene(sceneNames[0]);
+    } else {
+      console.warn("Нет доступных сцен для переключения.");
+    }
+  }
+  setSceneCanComplete(sceneName, canComplete = true) {
+    const scene = this.scenes.get(sceneName);
+    if (scene) {
+      scene.canComplete = canComplete;
+      console.log(`Завершение сцены "${sceneName}" разрешено: ${canComplete}`);
+    } else {
+      console.error(`Сцена "${sceneName}" не найдена.`);
+    }
+  }
+
+  // Проверить можно ли завершать сцену:
+  canSceneComplete(sceneName) {
+    const scene = this.scenes.get(sceneName);
+    return scene?.canComplete === true;
+  }
 
   changeToNextScene() {
     const sceneNames = Object.keys(this.scenes);

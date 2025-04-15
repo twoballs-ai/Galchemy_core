@@ -1,20 +1,23 @@
 // GameTypeFactory.js
 import { PlatformerGameType } from '../../gameTypePresets/PlatformerGameType.js';
-// Добавьте другие типы игр по необходимости
+import { FreeGameType } from '../../gameTypePresets/FreeGameType.js'; // <-- добавили
 
 export class GameTypeFactory {
   constructor(core) {
     this.core = core;
   }
 
-  loadGameType(gameType) {
-    console.log(`Загрузка типа игры: ${gameType}`); // Отладочный вывод
+  loadGameType(gameType, options = {}) {
+    console.log(`Загрузка типа игры: ${gameType}`);
     switch (gameType) {
       case 'platformer':
-        console.log(this.core)
         console.log(`Создание экземпляра PlatformerGameType для: ${gameType}`);
-        return new PlatformerGameType(this.core);
-      // Добавьте другие типы игр по необходимости
+        return new PlatformerGameType(this.core, options);
+
+      case 'free':
+        console.log(`Создание экземпляра FreeGameType для: ${gameType}`);
+        return new FreeGameType(this.core, options);
+
       default:
         console.warn(`Неизвестный тип игры: ${gameType}`);
         return null;

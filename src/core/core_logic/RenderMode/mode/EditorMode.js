@@ -40,12 +40,13 @@ export class EditorMode extends BaseMode {
 
   selectObjectAt(x, y) {
     const objects = this.sceneManager.getGameObjectsFromCurrentScene();
-    this.selectedObject = objects.find(obj => obj.containsPoint?.(x, y));
+    // Приводим коллекцию к массиву, если это Map
+    const objectsArray = Array.isArray(objects) ? objects : Array.from(objects.values());
+    this.selectedObject = objectsArray.find(obj => obj.containsPoint && obj.containsPoint(x, y));
     if (this.onSelect) {
       this.onSelect(this.selectedObject ? this.selectedObject.id : null);
     }
   }
-
   shouldRenderEachFrame() {
     return false; // Рендерим по необходимости
   }

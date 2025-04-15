@@ -18,6 +18,7 @@ export function getShapes(renderType) {
     sprite: function (params) {
       return new Sprite({
         image: params.image,
+        id: params.id, 
         x: params.x,
         y: params.y,
         width: params.width,
@@ -32,6 +33,7 @@ export function getShapes(renderType) {
     spriteGrid: function (params) {
       return new SpriteGrid({
         image: params.image,
+        id: params.id, 
         x: params.x,
         y: params.y,
         width: params.width,
@@ -51,6 +53,7 @@ export function getShapes(renderType) {
       return new Character({
         x: params.x,
         y: params.y,
+        id: params.id, 
         width: params.width || 50,
         height: params.height || 100,
         // color не передаём или передаём null
@@ -68,6 +71,7 @@ export function getShapes(renderType) {
 
     enemy: function (params) {
       return new Enemy({
+        id: params.id, 
         x: params.x,
         y: params.y,
         width: params.width || 50,

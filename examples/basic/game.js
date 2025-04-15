@@ -1,193 +1,179 @@
-// index.js
-import { Core } from '../../TETTE_CORE/core/core_logic/Core.js';
-import { getShape2d } from '../../TETTE_CORE/gameObjects/shapes/shape2d.js';
-import { SceneManager } from '../../TETTE_CORE/core/core_logic/SceneManager.js';
+import { Core } from '../../src/core/core_logic/Core.js';
+import { GameMode } from '../../src/core/core_logic/RenderMode/mode/GameMode.js';
+import { getShape2d } from '../../src/gameObjects/shape2d.js';
+import { KeyboardControl } from '../../src/core/controls/keyboardControl.js';
 
+const renderType = '2d';
 
-const renderType = '2d'; // Change to '2d' or 'webgl' as needed
-
-// Get shape2d object configured with renderType
-const shape2d = getShape2d(renderType);
-// Создаем менеджер сцен
-const sceneManager = new SceneManager();
-console.log(sceneManager)
-// Создаем экземпляр Core
-const game = new Core({
+const core = new Core({
   canvasId: 'canvas',
-  renderType: renderType,
-  backgroundColor: 'gray',
-  sceneManager: sceneManager,
-  width: window.innerWidth, // Устанавливаем ширину экрана
-  height: window.innerHeight, // Устанавливаем высоту экрана
-  gameType: 'platformer',
+  renderType,
+  backgroundColor: '#000',
+  width: 1200,
+  height: window.innerHeight,
 });
 
-sceneManager.createScene('level1','level2');
+// Отключаем гравитацию
+core.setGameType('free', { gravity: 0 });
 
-// Уровень 1
-const playerLevel1 = shape2d.square({
-  x: 100,
-  y: 100,
-  size: 50,
-  color: 'rgb(10, 105, 30)',
+const shape2d = getShape2d(renderType);
+const sceneManager = core.getSceneManager();
+sceneManager.createScene('level1');
+
+// 🎨 Фон
+const background = shape2d.spriteGrid({
+  id: 'background',
+  image: './SpaceShooterRedux/Backgrounds/black.png',
+  x: 0,
+  y: 0,
+  width: 200,
+  height: 200,
+  repeatX: 10,
+  repeatY: 10,
+  preserveAspectRatio: false,
+  enablePhysics: false,
+  isStatic: true,
+  layer: 0,
 });
 
-playerLevel1.update = function(deltaTime) {
-  this.x += deltaTime * 0.1;
-  if (this.x > 700) {
-    sceneManager.changeScene('level2');
-  }
-};
-
-const player2Level1 = shape2d.circle({
-  x: 150,
-  y: 50,
-  radius: 50,
-  color: 'green',
-  borderColor: 'black',
-  borderWidth: 2
-});
-
-
-player2Level1.update = function(deltaTime) {
-  this.x += deltaTime * 0.1;
-  if (this.x > 700) {
-    sceneManager.changeScene('level2');
-  }
-};
-const ellipseObj = shape2d.ellipse({
-  x: 200,
-  y: 400,
-  rX: 100,
-  rY: 50,
-  color: 'blue',
-  borderColor: 'white',
-  borderWidth: 2
-});
-
-ellipseObj.update = function(deltaTime) {
-  this.x += deltaTime * 0.1;
-  if (this.x > 700) {
-    sceneManager.changeScene('level2');
-  }
-};
-const myLine = shape2d.line({
-  x1: 100,
-  y1: 100,
-  x2: 300,
-  y2: 300,
-  color: 'blue',
-  widthline: 5,
-  lineRounded: 'round'
-});
-
-sceneManager.addGameObjectToScene('level1', playerLevel1, player2Level1, ellipseObj, myLine);
-
-// Уровень 2
-const playerLevel2 = shape2d.rectangle({
-  x: 50,
-  y: 50,
-  width:100,
-  height:200,
-  color: 'blue',
-});
-
-playerLevel2.update = function(deltaTime) {
-  this.x += deltaTime * 0.05;
-  if (this.x > 700) {
-    console.log('You have completed level 2!');
-  }
-};
-
-
-const myText = shape2d.text({
-  text: 'Данила и дёма',
-  x: 100,
-  y: 50,
-  fontsize: 76,
-  color: 'green',
-  fontFamily: 'Verdana',
-  borderColor: 'black',
-  borderWidth: 1
-});
-const myImage = new Image(); // Создаём новый объект Image
-myImage.src = './raketa.png';
-
-myImage.onload = () => {
-  const mySprite = shape2d.sprite({
-    image: myImage, // Используем загруженное изображение
-    x: 100,
-    y: 150,
-    width:300,
-    height: 200,
-    
-    // preserveAspectRatio: true,
-  });
-
-  // Добавляем спрайт в уровень 2
-  sceneManager.addGameObjectToScene('level2', mySprite);
-};
-// const mySprite = shape2d.sprite({
-//   image: myImage, // Загрузите изображение перед использованием
-//   x: 100,
-//   y: 150,
-//   width: 300,
-//   height: 400
-// });
-const triangle = shape2d.polygon({
-  vertices: [{ x: 100, y: 100 }, { x: 150, y: 200 }, { x: 50, y: 200 }],
-  color: 'green'
-});
-
-// Пример создания звезды
-const star = shape2d.star({
-  x: 200,
-  y: 200,
-  radius: 50,
-  points: 5,
-  color: 'yellow'
-});
-
-// Пример создания дуги
-const arcObj = shape2d.arc({
+// 🚀 Игрок
+const playerCharacter = shape2d.character({
+  id: 'playerCharacter',
   x: 300,
   y: 300,
-  radius: 100,
-  startAngle: 0,
-  endAngle: Math.PI, // Половина окружности
-  color: 'blue',
-  borderColor: 'black',
-  borderWidth: 2
+  width: 150,
+  height: 150,
+  image: './raketa.png',
+  preserveAspectRatio: true,
+  enablePhysics: true,
+  isAnimated: false,
+  layer: 1,
 });
 
-// Пример создания кривой Безье
-const bezier = shape2d.bezierCurve({
-  startX: 100,
-  startY: 100,
-  controlX1: 150,
-  controlY1: 50,
-  controlX2: 250,
-  controlY2: 200,
-  endX: 300,
-  endY: 100,
-  color: 'red'
-});
-const circle = shape2d.circle({
-  x: 150,
-  y: 150,
-  radius: 50,
-  startAngle: 0,
-  endAngle: 2 * Math.PI, // Полная окружность
-  color: 'green',
-  borderColor: 'red',
-  borderWidth: 2
-});
-// sceneManager.createScene('level2');
-sceneManager.addGameObjectToScene('level2',  playerLevel2, myText, triangle, star, arcObj, bezier, circle);
-// sceneManager.addGameObjectToScene('level2', mySprite);
+// Добавляем в сцену только фон и игрока
+sceneManager.addGameObjectToScene('level1', background);
+sceneManager.addGameObjectToScene('level1', playerCharacter);
 
-// Начинаем с уровня 1
+// Активируем сцену
 sceneManager.changeScene('level1');
 
-// Запуск игры
-game.start();
+// 🎮 Управление
+const keyboard = new KeyboardControl();
+
+// 🧊 Список изображений для случайных астероидов
+const asteroidImages = [
+  'meteorGrey_tiny2.png', 'meteorGrey_tiny1.png',
+  'meteorGrey_small2.png', 'meteorGrey_small1.png',
+  'meteorGrey_med2.png', 'meteorGrey_med1.png',
+  'meteorGrey_big4.png', 'meteorGrey_big3.png',
+  'meteorGrey_big2.png', 'meteorGrey_big1.png',
+  'meteorBrown_tiny2.png', 'meteorBrown_tiny1.png',
+  'meteorBrown_small2.png', 'meteorBrown_small1.png',
+  'meteorBrown_med3.png', 'meteorBrown_med1.png',
+  'meteorBrown_big4.png', 'meteorBrown_big3.png',
+  'meteorBrown_big2.png', 'meteorBrown_big1.png',
+].map(name => `./SpaceShooterRedux/PNG/Meteors/${name}`);
+
+let lastAsteroidSpawn = 0;
+const asteroidSpawnInterval = 800;
+
+// 🌠 Спавн одного астероида
+function spawnAsteroid() {
+  const id = 'asteroid-' + Date.now();
+  const image = asteroidImages[Math.floor(Math.random() * asteroidImages.length)];
+  const x = Math.random() * (core.graphicalContext.canvas.width - 80);
+  const y = 100;
+
+  const asteroid = shape2d.sprite({
+    id,
+    x,
+    y,
+    width: 80,
+    height: 80,
+    image,
+    preserveAspectRatio: true,
+    enablePhysics: true,
+    isStatic: false,
+    layer: 1,
+  });
+
+  if (asteroid.rigidBody) {
+    const angle = (Math.random() * 0.5 - 0.25); // ±15°
+    const speed = 200 + Math.random() * 200;
+    asteroid.rigidBody.velocityX = Math.sin(angle) * speed;
+    asteroid.rigidBody.velocityY = Math.cos(angle) * speed;
+  }
+
+  sceneManager.addGameObjectToScene('level1', asteroid);
+}
+
+// 🔁 Главная игровая логика
+core.userLogic = (objects, core, deltaTime) => {
+  const dt = deltaTime / 200;
+  const accel = 1600;
+  const decel = 1600;
+  const maxSpeed = playerCharacter.speed * 2600;
+  const canvas = core.graphicalContext.canvas;
+
+  const body = playerCharacter.rigidBody;
+  if (!body) return;
+
+  // 🎮 Управление игроком
+  if (keyboard.isKeyPressed('a') || keyboard.isKeyPressed('ArrowLeft')) {
+    body.velocityX = Math.max(body.velocityX - accel * dt, -maxSpeed);
+  } else if (keyboard.isKeyPressed('d') || keyboard.isKeyPressed('ArrowRight')) {
+    body.velocityX = Math.min(body.velocityX + accel * dt, maxSpeed);
+  } else {
+    body.velocityX = body.velocityX > 0
+      ? Math.max(body.velocityX - decel * dt, 0)
+      : Math.min(body.velocityX + decel * dt, 0);
+  }
+
+  if (keyboard.isKeyPressed('w') || keyboard.isKeyPressed('ArrowUp')) {
+    body.velocityY = Math.max(body.velocityY - accel * dt, -maxSpeed);
+  } else if (keyboard.isKeyPressed('s') || keyboard.isKeyPressed('ArrowDown')) {
+    body.velocityY = Math.min(body.velocityY + accel * dt, maxSpeed);
+  } else {
+    body.velocityY = body.velocityY > 0
+      ? Math.max(body.velocityY - decel * dt, 0)
+      : Math.min(body.velocityY + decel * dt, 0);
+  }
+
+  // 📏 Ограничение движения игрока
+  body.x = Math.max(0, Math.min(body.x, canvas.width - body.width));
+  body.y = Math.max(0, Math.min(body.y, canvas.height - body.height));
+  playerCharacter.x = body.x;
+  playerCharacter.y = body.y;
+
+  // ☄️ Спавн астероидов по таймеру (макс. 10)
+  const now = performance.now();
+  const sceneObjects = sceneManager.getGameObjectsFromCurrentScene();
+  const currentAsteroids = Array.from(sceneObjects.values()).filter(obj =>
+    obj.id?.startsWith('asteroid-')
+  );
+
+  if (now - lastAsteroidSpawn > asteroidSpawnInterval && currentAsteroids.length < 10) {
+    spawnAsteroid();
+    lastAsteroidSpawn = now;
+  }
+
+  // 🧹 Удаление астероидов, вышедших за нижнюю или боковые границы
+  currentAsteroids.forEach(asteroid => {
+    if (
+      asteroid.x + asteroid.width < 0 || // ушёл за левую границу
+      asteroid.x > canvas.width ||       // ушёл за правую границу
+      asteroid.y > canvas.height + 100   // ушёл вниз
+    ) {
+      sceneManager.removeGameObjectFromScene('level1', asteroid.id);
+    }
+  });
+};
+
+// 🚀 Запуск игры
+async function startGame() {
+  core.switchMode(GameMode);
+}
+
+core.start().then(() => {
+  startGame();
+});

@@ -100,17 +100,17 @@ export class Canvas2dGameObject {
   // Method to update object's position
   update(deltaTime) {
     if (this.rigidBody) {
-      // If physics is enabled, update position from rigidBody
       this.x = this.rigidBody.x;
       this.y = this.rigidBody.y;
       this.width = this.rigidBody.width;
       this.height = this.rigidBody.height;
     } else {
-      // Update position based on speed and time
-      this.x += (this.speedX || 0) * deltaTime / 1000;  // Speed in pixels/second
+      // Если нет физики, просто обновляем позицию
+      this.x += (this.speedX || 0) * deltaTime / 1000; // Speed в пикселях в секунду
       this.y += (this.speedY || 0) * deltaTime / 1000;
     }
   }
+  
 
   // Method to render the object (should be implemented in subclasses)
   render(context) {
