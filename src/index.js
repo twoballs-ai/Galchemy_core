@@ -1,5 +1,5 @@
 export { Core } from './core/Core.js';
-export { GameObject } from './core/GameObject.js';
+export { GameObject } from './core/GameObjects/GameObject.js';
 export { Input } from './core/Input.js';
 export { Timer } from './utils/Timer.js';
 // import { EventEmitter } from './utils/EventEmitter.js';
