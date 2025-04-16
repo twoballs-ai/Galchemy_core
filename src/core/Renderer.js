@@ -12,7 +12,9 @@ export class Renderer {
   
     render(scene) {
       this.clear();
-      scene.objects.forEach(obj => obj.render(this.ctx));
+      // Сортировка по слою
+      const sortedObjects = [...scene.objects].sort((a, b) => a.layer - b.layer);
+      sortedObjects.forEach(obj => obj.render(this.ctx));
     }
   }
   

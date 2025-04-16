@@ -1,3 +1,4 @@
+// Core.js
 import { Scene } from './Scene.js';
 import { Renderer } from './Renderer.js';
 import { Physics } from './Physics.js';
@@ -15,6 +16,7 @@ export class Core {
     this.scene = new Scene();
     this.physics = null;
     this.input = new Input();
+    this.movementBindings = []; // Здесь будут храниться привязки управления
 
     this.lastTime = 0;
     this.loop = this.loop.bind(this);
@@ -33,6 +35,16 @@ export class Core {
     });
   }
 
+  /**
+   * Привязывает управление к объекту.
+   * @param {GameObject} gameObject – объект, которым управляем
+   * @param {number} speed – скорость движения (в пикселях/сек.)
+   * @param {object} options – { horizontal: true/false, vertical: true/false }
+   */
+  setMovement(gameObject, speed = 200, options = { horizontal: true, vertical: true }) {
+    this.movementBindings.push({ gameObject, speed, options });
+  }
+
   start() {
     requestAnimationFrame(this.loop);
   }
@@ -41,7 +53,14 @@ export class Core {
     const deltaTime = (timestamp - this.lastTime) / 1000;
     this.lastTime = timestamp;
 
-    if (this.physics) this.physics.update(deltaTime);
+    // Обрабатываем привязки управления
+    for (const binding of this.movementBindings) {
+      this.input.bindMovement(binding.gameObject, binding.speed, binding.options);
+    }
+
+    if (this.physics) {
+      this.physics.update(deltaTime);
+    }
     this.scene.update(deltaTime);
     this.renderer.render(this.scene);
 
