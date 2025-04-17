@@ -75,7 +75,8 @@ const mob3 = Mob.spawnSingle({
   x: 200,
   y: -70,
   width: 70,
-  pattern: 'fallRandom'
+  pattern: 'fallRandom',
+  
 });
 
 // Если нужно обратиться к ним дальше в коде, у нас есть mob1, mob2, mob3
@@ -89,7 +90,11 @@ const meteorArray = Mob.spawnMultiple({
   count: 5,
   pattern: 'fallRandom',
   minSize: 40,
-  maxSize: 100
+  maxSize: 100,
+  repeat: true,       // 💫 автоматически
+  interval: 3000,     // ⏱️ каждые 3 секунды
+  mode: 'batch',
+  
 });
 // meteorArray[0], meteorArray[1], ... – ссылки на созданных мобов
 

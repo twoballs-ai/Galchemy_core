@@ -41,21 +41,20 @@ export class Mob {
     count = 5,
     pattern = 'fall',
     minSize = 50,
-    maxSize = 90
+    maxSize = 90,
+    repeat = false,
+    interval = 2000,
+    mode = 'batch' // или 'continuous'
   }) {
     const resultArray = [];
-
-    for (let i = 0; i < count; i++) {
+  
+    const createMob = () => {
       const randomIndex = Math.floor(Math.random() * images.length);
       const image = images[randomIndex];
-
       const size = minSize + Math.random() * (maxSize - minSize);
-
       const x = Math.random() * (game.canvas.width - size);
       const y = -size;
-
-      // Создаём и тут же запоминаем ссылку, чтобы при необходимости
-      // вернуть весь массив созданных мобов
+  
       const mob = Mob.spawnSingle({
         game,
         image,
@@ -65,11 +64,31 @@ export class Mob {
         height: size,
         pattern
       });
-
+  
       resultArray.push(mob);
+    };
+  
+    if (mode === 'continuous' && repeat) {
+      setInterval(() => {
+        createMob(); // по одному
+      }, interval);
+    } else {
+      const createWave = () => {
+        for (let i = 0; i < count; i++) {
+          createMob(); // пачкой
+        }
+      };
+  
+      createWave(); // первая партия
+  
+      if (repeat) {
+        setInterval(() => {
+          createWave();
+        }, interval);
+      }
     }
-
-    // Если нужно, можете возвращать массив созданных мобов
+  
     return resultArray;
   }
+  
 }
