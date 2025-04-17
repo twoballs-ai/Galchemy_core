@@ -2,6 +2,9 @@ export { Core } from './core/Core.js';
 export { GameObject } from './core/GameObjects/GameObject.js';
 export { Input } from './core/Input.js';
 export { Timer } from './utils/Timer.js';
+export { Player } from './core//GameObjects/Character/Player.js';
+export { Mob } from './core/GameObjects/Character/Mob.js';
+export { GUI } from './utils/GUI.js';
 // import { EventEmitter } from './utils/EventEmitter.js';
 
 // export default { Core, GameObject, Input, Timer };

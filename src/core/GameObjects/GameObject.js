@@ -1,122 +1,75 @@
-// GameObject.js
+// src/core/GameObjects/GameObject.js
 export class GameObject {
   constructor({
     imageSrc,
-    x,
-    y,
-    width,
-    height,
-    physics = false,
+    x, y,
+    width, height,
+    layer     = 0,
+
+    physics   = false,   // участвует в симуляции физики?
+    collision = false,   // участвует в проверке столкновений?
+
     repeatX = false,
     repeatY = false,
-    scale = 1,
-    layer = 0,
-    isEnemy = false,
-    fallSpeed = 0,   // скорость падения
-    fallOffsetX = 0  // горизонтальное смещение
+    scale   = 1
   }) {
+    // позиция и размеры
     this.x = x;
     this.y = y;
-    this.width = width;
+    this.width  = width;
     this.height = height;
-    this.layer = layer;
+    this.layer  = layer;
 
-    // Параметры для фона (repeat)
-    this.repeatX = repeatX;
-    this.repeatY = repeatY;
-    this.scale = scale;
+    // флаги
+    this.physics = physics;
+    this.collision = collision;
+    // физическое тело (если нужно)
+    this.physicsBody = physics ? {
+      x, y, width, height,
+      velocity: { x: 0, y: 0 },
+      isStatic: false
+    } : null;
 
-    // Если это враг (моб), в update() будем двигать
-    this.isEnemy = isEnemy;
-    this.fallSpeed = fallSpeed;
-    this.fallOffsetX = fallOffsetX;
-
-    // Спрайт
+    // спрайт
     this.image = new Image();
     this.image.src = imageSrc;
 
-    // Физика
-    this.physicsBody = physics
-      ? {
-          x: this.x,
-          y: this.y,
-          width: this.width,
-          height: this.height,
-          velocity: { x: 0, y: 0 },
-          isStatic: false
-        }
-      : null;
+    // параметры отрисовки (фон может повторяться)
+    this.repeatX = repeatX;
+    this.repeatY = repeatY;
+    this.scale   = scale;
   }
 
-  /**
-   * Задаёт режим движения для врага (если isEnemy = true).
-   * @param {string} pattern - 'static', 'fall', 'fallRandom', 'horizontal', ...
-   */
-  setMovementPattern(pattern) {
-    this.movementPattern = pattern;
-    // Простейшие варианты
-    if (pattern === 'static') {
-      this.fallSpeed = 0;
-      this.fallOffsetX = 0;
-    }
-    else if (pattern === 'fall') {
-      this.fallSpeed = 100;  // падает вниз со скоростью 100
-      this.fallOffsetX = 0;
-    }
-    else if (pattern === 'fallRandom') {
-      this.fallSpeed = 100 + Math.random() * 50;      // 100..150
-      this.fallOffsetX = (Math.random() < 0.5)
-        ? Math.random() * 20
-        : -Math.random() * 20;
-    }
-    else if (pattern === 'horizontal') {
-      this.fallSpeed = 0;
-      // Пусть двигается по X влево или вправо
-      this.fallOffsetX = (Math.random() < 0.5)
-        ? 80
-        : -80;
-    }
-    // Можно добавить другие («diagonal», «circle», «fly» и т.д.)
-  }
-
-  update(deltaTime) {
-    // Если у нас есть физика, подгоняем позицию
+  /* --------- методы, ожидаемые движком --------- */
+  update(dt) {
+    /* синхронизируемся с физикой */
     if (this.physicsBody) {
       this.x = this.physicsBody.x;
       this.y = this.physicsBody.y;
     }
-    // Простая логика движения врагов
-    if (this.isEnemy) {
-      this.y += this.fallSpeed * deltaTime;
-      this.x += this.fallOffsetX * deltaTime;
-    }
   }
+  onCollision(other) {}         // вызывается Physics при пересечении
 
   render(ctx) {
     if (!this.image.complete) return;
 
-    const drawWidth = this.width * this.scale;
-    const drawHeight = this.height * this.scale;
+    const w = this.width  * this.scale;
+    const h = this.height * this.scale;
 
-    // Если это фон, может быть режим repeat
     if (this.repeatX || this.repeatY) {
-      let repeatType = 'no-repeat';
-      if (this.repeatX && this.repeatY) {
-        repeatType = 'repeat';
-      } else if (this.repeatX) {
-        repeatType = 'repeat-x';
-      } else if (this.repeatY) {
-        repeatType = 'repeat-y';
-      }
-      const pattern = ctx.createPattern(this.image, repeatType);
-      ctx.fillStyle = pattern;
+      let mode = 'no-repeat';
+      if (this.repeatX && this.repeatY) mode = 'repeat';
+      else if (this.repeatX)            mode = 'repeat-x';
+      else if (this.repeatY)            mode = 'repeat-y';
+
+      const pattern = ctx.createPattern(this.image, mode);
       ctx.save();
       ctx.translate(this.x, this.y);
-      ctx.fillRect(0, 0, drawWidth, drawHeight);
+      ctx.fillStyle = pattern;
+      ctx.fillRect(0, 0, w, h);
       ctx.restore();
     } else {
-      // Обычный спрайт
-      ctx.drawImage(this.image, this.x, this.y, drawWidth, drawHeight);
+      ctx.drawImage(this.image, this.x, this.y, w, h);
     }
   }
 }

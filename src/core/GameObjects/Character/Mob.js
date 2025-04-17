@@ -1,75 +1,106 @@
-// Mob.js
+// src/core/GameObjects/Character/Mob.js
 import { GameObject } from '../GameObject.js';
+import { Player }     from './Player.js';
 
-export class Mob {
-  static spawnSingle({
-    game,
-    image,
-    x,
-    y,
-    width = 50,
-    height,
-    pattern = 'static'
+export class Mob extends GameObject {
+  constructor({
+    imageSrc,
+    x, y,
+    width,  height = width,
+    pattern = 'static',
+
+    physics   = false,
+    collision = true,
+    layer     = 0
   }) {
-    const finalHeight = height || width;
+    super({ imageSrc, x, y, width, height, physics, collision, layer });
+    this.setMovementPattern(pattern);
+    this.toDelete = false;
+  }
 
-    const mob = new GameObject({
-      imageSrc: image,
-      x,
-      y,
-      width,
-      height: finalHeight,
-      isEnemy: true,
-      layer: 0
-    });
-
-    // Настраиваем паттерн движения, если метод в GameObject есть
-    if (typeof mob.setMovementPattern === 'function') {
-      mob.setMovementPattern(pattern);
+  /* ---------- движение ---------- */
+  setMovementPattern(p) {
+    this.vx = 0;
+    this.vy = 0;
+    switch (p) {
+      case 'fall':        this.vy = 100; break;
+      case 'fallRandom':
+        this.vy = 100 + Math.random() * 50;
+        this.vx = (Math.random() < 0.5 ? 1 : -1) * Math.random() * 20;
+        break;
+      case 'horizontal':
+        this.vx = (Math.random() < 0.5 ? 80 : -80);
+        break;
+      // static — скорости ноль
     }
+  }
 
-    // Добавляем в игру
+  update(dt) {
+    this.x += this.vx * dt;
+    this.y += this.vy * dt;
+  }
+
+  /* ---------- столкновения ---------- */
+  onCollision(other) {                // поведение по умолчанию
+    // console.log("моб столкнулся")
+    if (other instanceof Player) this.toDelete = true;
+  }
+
+  /* ---------- вспомогательные спавнеры ---------- */
+
+  /** Создать одного моба и сразу добавить в игру */
+  static spawnSingle({ game, ...cfg }) {
+    const mob = new Mob(cfg);
     game.add(mob);
-
-    // ВАЖНО: возвращаем объект
     return mob;
   }
 
+  /**
+   * Создать пачку мобов.
+   * @param {number} interval  – если задан (мс), будет циклический спавн
+   * @returns {object}         – { mobs: [...], cancel: ()=>void }
+   */
   static spawnMultiple({
     game,
     images,
-    count = 5,
-    pattern = 'fall',
-    minSize = 50,
-    maxSize = 90
+    count     = 5,
+    pattern   = 'fallRandom',
+    minSize   = 40,
+    maxSize   = 100,
+    interval  = null,      // ⬅️  новинка
+    ...rest
   }) {
-    const resultArray = [];
+    const result = { mobs: [], cancel: null };
 
-    for (let i = 0; i < count; i++) {
-      const randomIndex = Math.floor(Math.random() * images.length);
-      const image = images[randomIndex];
+    const once = () => {
+      for (let i = 0; i < count; i++) {
+        const img  = images[Math.floor(Math.random() * images.length)];
+        const size = minSize + Math.random() * (maxSize - minSize);
 
-      const size = minSize + Math.random() * (maxSize - minSize);
+        result.mobs.push(
+          Mob.spawnSingle({
+            game,
+            imageSrc: img,
+            x: Math.random() * (game.canvas.width - size),
+            y: -size,
+            width: size,
+            height: size,
+            pattern,
+            ...rest
+          })
+        );
+      }
+    };
 
-      const x = Math.random() * (game.canvas.width - size);
-      const y = -size;
+    // первая партия
+    once();
 
-      // Создаём и тут же запоминаем ссылку, чтобы при необходимости
-      // вернуть весь массив созданных мобов
-      const mob = Mob.spawnSingle({
-        game,
-        image,
-        x,
-        y,
-        width: size,
-        height: size,
-        pattern
-      });
-
-      resultArray.push(mob);
+    // циклический спавн
+    if (interval && interval > 0) {
+      const id = setInterval(once, interval);
+      result.cancel = () => clearInterval(id);
     }
 
-    // Если нужно, можете возвращать массив созданных мобов
-    return resultArray;
+    return result;
   }
 }
