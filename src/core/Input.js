@@ -1,14 +1,19 @@
-// src/core/Input.js
 export class Input {
   constructor() {
     this.keys = {};
+    this._handlers = {}; // ← добавить эту строку
 
-    /* — фиксируем ВСЕ варианты названий клавиш — */
     window.addEventListener('keydown', e => {
-      this.keys[e.key]                      = true;              // ' '  'a'
-      this.keys[e.key.toLowerCase?.()]      = true;              // 'a'
-      this.keys[e.code]                     = true;              // 'Space'
-      this.keys[e.code.toLowerCase()]       = true;              // 'space'
+      this.keys[e.key]                      = true;
+      this.keys[e.key.toLowerCase?.()]      = true;
+      this.keys[e.code]                     = true;
+      this.keys[e.code.toLowerCase()]       = true;
+
+      // 🔔 вызываем подписчиков
+      (this._handlers[e.key] || []).forEach(fn => fn(e));
+      (this._handlers[e.code] || []).forEach(fn => fn(e));
+      (this._handlers[e.key.toLowerCase?.()] || []).forEach(fn => fn(e));
+      (this._handlers[e.code.toLowerCase?.()] || []).forEach(fn => fn(e));
     });
 
     window.addEventListener('keyup', e => {
@@ -19,10 +24,8 @@ export class Input {
     });
   }
 
-  /* быстрое «нажато ли» */
   isPressed(key) { return !!this.keys[key]; }
 
-  /* === движение (как было) === */
   getMovementAxis() {
     let x = 0, y = 0;
     if (this.isPressed('ArrowLeft')  || this.isPressed('a') || this.isPressed('ф')) x = -1;
@@ -32,10 +35,7 @@ export class Input {
     return { x, y };
   }
 
-  /* привязка движения к объекту */
-  bindMovement(gameObject, speed = 200,
-               opt = { horizontal: true, vertical: true }) {
-
+  bindMovement(gameObject, speed = 200, opt = { horizontal: true, vertical: true }) {
     const { x, y } = this.getMovementAxis();
     let mx = opt.horizontal ? x : 0;
     let my = opt.vertical   ? y : 0;
@@ -49,12 +49,28 @@ export class Input {
     }
   }
 
-  /* общие действия: { shoot:' ', melee:'x' }  */
   bindActions(obj, map = {}, game) {
     for (const [method, key] of Object.entries(map)) {
       if (this.isPressed(key) && typeof obj[method] === 'function') {
         obj[method](game);
       }
     }
+  }
+  onKeyDown(key, fn) {
+    window.addEventListener('keydown', e => {
+      if (e.key === key) fn();
+    });
+  }
+  onKeyUp(key, fn) {
+    window.addEventListener('keyup', e => {
+      if (e.key === key) fn();
+    });
+  }
+  /** 🟩 ДОБАВЬ ЭТО: метод подписки */
+  onKey(key, fn) {
+    if (!this._handlers[key]) {
+      this._handlers[key] = [];
+    }
+    this._handlers[key].push(fn);
   }
 }
