@@ -5,24 +5,38 @@ export default class Entity {
       this.core  = core;   // ссылка на Core (нужна для scene / physics)
       this.input = input;  // общий экземпляр Input с методом onKey
       this.moveDirections = [];
+      this._updateRegistered = false; // 👈 добавляем флаг
     }
   
-    /* ---------------------------------------------------- *
-     *                      Д В И Ж Е Н И Е                *
-     * ---------------------------------------------------- */
     #bindMove(key, vx, vy) {
-        // при нажатии добавляем направление
-        this.input.onKeyDown(key, () => {
-          this.moveDirections.push({ vx, vy, key });
+      this.input.onKeyDown(key, () => {
+        this.moveDirections.push({ vx, vy, key });
+      });
+  
+      this.input.onKeyUp(key, () => {
+        this.moveDirections = this.moveDirections.filter(dir => dir.key !== key);
+      });
+  
+      // 🔥 Автоматически регистрируем onUpdate один раз
+      if (!this._updateRegistered) {
+        this.core.scene.addUpdateHook(dt => {
+          let totalX = 0, totalY = 0;
+          for (const dir of this.moveDirections) {
+            totalX += dir.vx;
+            totalY += dir.vy;
+          }
+  
+          if (totalX !== 0 || totalY !== 0) {
+            const v = this.go.speed ?? 200;
+            this.go.x += totalX * v * dt;
+            this.go.y += totalY * v * dt;
+          }
         });
-      
-        // при отпускании убираем
-        this.input.onKeyUp(key, () => {
-          this.moveDirections = this.moveDirections.filter(dir => dir.key !== key);
-        });
-      
-        return this;
+        this._updateRegistered = true;
       }
+  
+      return this;
+    }
   
     moveLeft (key = 'ArrowLeft')  { return this.#bindMove(key, -1,  0); }
     moveRight(key = 'ArrowRight') { return this.#bindMove(key,  1,  0); }
