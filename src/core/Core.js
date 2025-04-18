@@ -16,10 +16,14 @@ export class Core {
     this.physics   = null;
     this.input     = new Input();
     this.movementBindings = [];
+    this.actionBindings   = [];
 
     this.lastTime = 0;
     this.loop     = this.loop.bind(this);
     this.gui = null;    
+  }
+  setActions(gameObject, map) {
+    this.actionBindings.push({ gameObject, map });
   }
 
   enablePhysics({ gravity = 0 }) {
@@ -49,7 +53,9 @@ export class Core {
     for (const b of this.movementBindings) {
       this.input.bindMovement(b.gameObject, b.speed, b.opts);
     }
-
+    for (const b of this.actionBindings) {
+      this.input.bindActions(b.gameObject, b.map, this); // передаём this ‑ это Core
+    }
     /* физика */
     if (this.physics) this.physics.update(dt);
 

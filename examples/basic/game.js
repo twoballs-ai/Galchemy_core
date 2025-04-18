@@ -11,7 +11,7 @@ game.setGUI(gui);
 const player = new Player({
   imageSrc: './raketa.png',
   x: 500, y: 600,
-  width: 50, height: 50,
+  width: 100, height: 100,
   speed: 300,
   physics: true,   // включаем по умолчанию
   collision: true,
@@ -19,7 +19,15 @@ const player = new Player({
 game.add(player);
 game.setMovement(player, player.speed, { horizontal: true, vertical: true });
 
+player.setProjectile({
+  imageSrc : './laserGreen02.png',   // ← ЛЮБОЙ свой путь
+  width    : 10,
+  height   : 50,
+  speed    : 1000
+});
 
+/* 3. назначаем кнопку */
+game.setActions(player, { shoot: 'space' });
 
 
 const enemyImages = [

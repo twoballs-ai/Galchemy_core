@@ -1,75 +1,60 @@
+// src/core/Input.js
 export class Input {
   constructor() {
     this.keys = {};
-    window.addEventListener('keydown', e => this.keys[e.key] = true);
-    window.addEventListener('keyup', e => this.keys[e.key] = false);
+
+    /* — фиксируем ВСЕ варианты названий клавиш — */
+    window.addEventListener('keydown', e => {
+      this.keys[e.key]                      = true;              // ' '  'a'
+      this.keys[e.key.toLowerCase?.()]      = true;              // 'a'
+      this.keys[e.code]                     = true;              // 'Space'
+      this.keys[e.code.toLowerCase()]       = true;              // 'space'
+    });
+
+    window.addEventListener('keyup', e => {
+      this.keys[e.key]                      = false;
+      this.keys[e.key.toLowerCase?.()]      = false;
+      this.keys[e.code]                     = false;
+      this.keys[e.code.toLowerCase()]       = false;
+    });
   }
 
-  isPressed(key) {
-    return !!this.keys[key];
-  }
+  /* быстрое «нажато ли» */
+  isPressed(key) { return !!this.keys[key]; }
 
-  /**
-   * Возвращает движение по осям с учётом разных раскладок и регистра
-   */
+  /* === движение (как было) === */
   getMovementAxis() {
-    let x = 0;
-    let y = 0;
-
-    // Горизонталь
-    if (
-      this.isPressed('ArrowLeft') || 
-      this.isPressed('a') || this.isPressed('A') || 
-      this.isPressed('ф') || this.isPressed('Ф')
-    ) {
-      x = -1;
-    }
-    if (
-      this.isPressed('ArrowRight') || 
-      this.isPressed('d') || this.isPressed('D') || 
-      this.isPressed('в') || this.isPressed('В')
-    ) {
-      x = 1;
-    }
-
-    // Вертикаль
-    if (
-      this.isPressed('ArrowUp') || 
-      this.isPressed('w') || this.isPressed('W') || 
-      this.isPressed('ц') || this.isPressed('Ц')
-    ) {
-      y = -1;
-    }
-    if (
-      this.isPressed('ArrowDown') || 
-      this.isPressed('s') || this.isPressed('S') || 
-      this.isPressed('ы') || this.isPressed('Ы')
-    ) {
-      y = 1;
-    }
-
+    let x = 0, y = 0;
+    if (this.isPressed('ArrowLeft')  || this.isPressed('a') || this.isPressed('ф')) x = -1;
+    if (this.isPressed('ArrowRight') || this.isPressed('d') || this.isPressed('в')) x =  1;
+    if (this.isPressed('ArrowUp')    || this.isPressed('w') || this.isPressed('ц')) y = -1;
+    if (this.isPressed('ArrowDown')  || this.isPressed('s') || this.isPressed('ы')) y =  1;
     return { x, y };
   }
 
-  /**
-   * Применяет управление к gameObject, нормализуя вектор движения, чтобы при диагональном движении скорость не увеличивалась.
-   * @param {GameObject} gameObject – объект, у которого меняем скорость
-   * @param {number} speed – скорость движения (пикселей/сек)
-   * @param {object} options – { horizontal: true, vertical: true }
-   */
-  bindMovement(gameObject, speed = 200, options = { horizontal: true, vertical: true }) {
+  /* привязка движения к объекту */
+  bindMovement(gameObject, speed = 200,
+               opt = { horizontal: true, vertical: true }) {
+
     const { x, y } = this.getMovementAxis();
-    let moveX = options.horizontal ? x : 0;
-    let moveY = options.vertical ? y : 0;
+    let mx = opt.horizontal ? x : 0;
+    let my = opt.vertical   ? y : 0;
 
-    const magnitude = Math.sqrt(moveX * moveX + moveY * moveY);
+    const mag = Math.hypot(mx, my);
+    if (mag) { mx /= mag; my /= mag; }
 
-    if (magnitude > 0) {
-      moveX /= magnitude;
-      moveY /= magnitude;
+    if (gameObject.physicsBody) {
+      gameObject.physicsBody.velocity.x = mx * speed;
+      gameObject.physicsBody.velocity.y = my * speed;
     }
+  }
 
-    gameObject.physicsBody.velocity.x = moveX * speed;
-    gameObject.physicsBody.velocity.y = moveY * speed;
+  /* общие действия: { shoot:' ', melee:'x' }  */
+  bindActions(obj, map = {}, game) {
+    for (const [method, key] of Object.entries(map)) {
+      if (this.isPressed(key) && typeof obj[method] === 'function') {
+        obj[method](game);
+      }
+    }
   }
 }
