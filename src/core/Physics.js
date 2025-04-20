@@ -20,10 +20,12 @@ export class Physics {
     }
 
     /* 2. проверяем столкновения AABB только для colliders */
-    for (let i = 0; i < this.colliders.length; i++) {
-      for (let j = i + 1; j < this.colliders.length; j++) {
-        const A = this.colliders[i];
-        const B = this.colliders[j];
+    const colliders = this.colliders.filter(o => !o.toDelete && !o.dead);
+
+    for (let i = 0; i < colliders.length; i++) {
+      for (let j = i + 1; j < colliders.length; j++) {
+        const A = colliders[i];
+        const B = colliders[j];
 
         if (
           A.x < B.x + B.width  && A.x + A.width  > B.x &&

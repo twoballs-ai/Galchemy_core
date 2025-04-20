@@ -4,19 +4,24 @@ export class Input {
     this._handlers = {};
 
     window.addEventListener('keydown', e => {
-      const key = e.key?.toLowerCase();
-      if (key) {
-        this.keys.add(key);
-        if (this._handlers[key]) {
-          for (const fn of this._handlers[key]) fn(e);
-        }
-      }
+       const k = e.key?.toLowerCase();
+       const c = e.code?.toLowerCase();
+       if (k) this.keys.add(k);
+       if (c) this.keys.add(c);      // ← теперь 'space' тоже в множестве
+             for (const name of [k, c]) {
+         if (name && this._handlers[name]) {
+           for (const fn of this._handlers[name]) fn(e);
+         }
+       }
     });
 
     window.addEventListener('keyup', e => {
-      const key = e.key?.toLowerCase();
-      if (key) this.keys.delete(key);
+      const k = e.key?.toLowerCase();
+      const c = e.code?.toLowerCase();
+      if (k) this.keys.delete(k);
+      if (c) this.keys.delete(c);
     });
+    
   }
 
   isPressed(key) {

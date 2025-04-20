@@ -5,26 +5,45 @@ const game = Game.init({
   w: 1200,
   h: 800,
   bg: "#222",
+  debug: false 
 }).physics({ gravity: 0 });
+const gui = game.setGUI({
+  showScore: true,
+  showHealth: true,
+  showEnergy: true
+});
 const player = game
-  .spawn("./raketa.png", 500, 600, { size: 100, speed: 300 })
-  .moveLeft("a")
-  .moveRight("d")
-  .moveUp("w")
-  .moveDown("s")
+  .spawn("./raketa.png", 500, 600, { w: 100, h: 100, layer: 4,speed: 300 })
+  // .moveLeft('a').moveRight('d').moveUp('w').moveDown('s')
+
+  // Или сразу английская + русская + стрелки:
+  .moveLeft(['a','ф','ArrowLeft'])
+  .moveRight(['d','в','ArrowRight'])
+  .moveUp(['w','ц','ArrowUp'])
+  .moveDown(['s','ы','ArrowDown'])
   .shoot("space", {
-    // ← больше никаких функций
-    image: "./laser.png", // спрайт пули
-    dir: "up", // направление: up / down / left / right
-    offset: { x: 0, y: -50 }, // (необязательное) смещение
-    speed: 1000, // скорость
-  });
+  image: "./laserGreen02.png",
+  w: 10,
+  h: 70,
+  speed: 1200,
+  offset: { x: 0, y: -50 },
+  dir: "up",
+  cooldown: 300
+})
 
 game.spawnGroup({
-  images: ["./raketa.png", "./raketa.png"],
+  images: [
+    "./meteorBrown_big1.png",
+    "./meteorBrown_big2.png",
+    "./meteorBrown_big3.png",
+    "./meteorBrown_big4.png"
+  ],
   pattern: "fallRandom",
-  size: [40, 100],
-  every: 3000,
+  minSize:40,
+  maxSize:100,
+  layer: 3,
+  every: 1000,
+  score: 5 
 });
 
 game.start();
