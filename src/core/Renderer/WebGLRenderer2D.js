@@ -1,5 +1,5 @@
 import { Renderer } from './Renderer.js';
-import { mat4 } from 'gl-matrix';
+import { mat4 } from 'gl-matrix/esm/index.js';
 
 export class WebGLRenderer extends Renderer {
   constructor(graphicalContext, backgroundColor) {
@@ -88,7 +88,15 @@ export class WebGLRenderer extends Renderer {
   clear() {
     this.context.clear(this.context.COLOR_BUFFER_BIT | this.context.DEPTH_BUFFER_BIT);
   }
-
+  drawEntity(entity) {
+    if (entity && typeof entity.renderWebGL === 'function') {
+      entity.renderWebGL(this.context, this.shaderProgram);
+    } else if (entity && typeof entity.renderWebGL3D === 'function') {
+      entity.renderWebGL3D(this.context, this.shaderProgram);
+    } else {
+      console.warn("Entity has no known render method");
+    }
+  }
   render(scene) {
     this.clear();
     scene.objects.forEach(obj => {
