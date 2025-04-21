@@ -1,0 +1,9 @@
+.rvmrc
+.DS_Store
+tmp
+node_modules
+npm-debug.log
+dist/index.d.ts
+dist/LICENSE.md
+dist/package.json
+dist/README.md

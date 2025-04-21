@@ -1,7 +1,7 @@
 import { Renderer } from './Renderer.js';
 import { mat4 } from 'gl-matrix/esm/index.js';
 
-export class WebGLRenderer extends Renderer {
+export class WebGLRenderer2D extends Renderer {
   constructor(graphicalContext, backgroundColor) {
     super(graphicalContext.getContext(), backgroundColor);
     this.canvas = graphicalContext.getCanvas();

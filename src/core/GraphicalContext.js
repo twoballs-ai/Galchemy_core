@@ -1,8 +1,8 @@
-// src/core/GraphicalContext.js
-import { CanvasRenderer } from './Renderer/CanvasRenderer.js';
-import { WebGLRenderer }  from './Renderer/WebGLRenderer2D.js';
-import { WebGPURenderer } from './Renderer/WebGPURenderer.js';
-import { ColorMixin }     from '../utils/ColorMixin.js';
+import { CanvasRenderer }     from './Renderer/CanvasRenderer.js';
+import { WebGLRenderer2D }    from './Renderer/WebGLRenderer2D.js';
+import { WebGLRenderer3D }    from './Renderer/WebGLRenderer3D.js';
+import { WebGPURenderer }     from './Renderer/WebGPURenderer.js';
+import { ColorMixin }         from '../utils/ColorMixin.js';
 
 export class GraphicalContext {
   constructor(canvasId, type, bg, w, h) {
@@ -11,22 +11,37 @@ export class GraphicalContext {
     this.canvas.width  = w;
     this.canvas.height = h;
 
-    // контекст
-    if (type === '2d')    this.ctx = this.canvas.getContext('2d');
-    else if (type === 'webgl')  this.ctx = this.canvas.getContext('webgl') || this.canvas.getContext('experimental-webgl');
-    else if (type === 'webgpu') this.ctx = this.canvas.getContext('webgpu');
-    else throw new Error(`Unsupported context type: ${type}`);
+    // определяем контекст
+    switch (type) {
+      case '2d':
+        this.ctx = this.canvas.getContext('2d');
+        break;
+      case 'webgl':
+      case 'webgl2d':
+      case 'webgl3d':
+        this.ctx = this.canvas.getContext('webgl') || this.canvas.getContext('experimental-webgl');
+        break;
+      case 'webgpu':
+        this.ctx = this.canvas.getContext('webgpu');
+        break;
+      default:
+        throw new Error(`Unsupported context type: ${type}`);
+    }
 
     // нормализуем цвет
     const normalizedBg = ColorMixin(bg, type);
 
-    // выбираем рендерер
+    // выбираем подходящий рендерер
     switch (type) {
       case '2d':
         this.renderer = new CanvasRenderer(this, normalizedBg);
         break;
+      case 'webgl2d':
+        this.renderer = new WebGLRenderer2D(this, normalizedBg);
+        break;
       case 'webgl':
-        this.renderer = new WebGLRenderer(this, normalizedBg);
+      case 'webgl3d':
+        this.renderer = new WebGLRenderer3D(this, normalizedBg);
         break;
       case 'webgpu':
         this.renderer = new WebGPURenderer(this, normalizedBg);
@@ -34,13 +49,13 @@ export class GraphicalContext {
     }
   }
 
-  getContext()  { return this.ctx; }
-  getCanvas()   { return this.canvas; }
-  getRenderer(){ return this.renderer; }
+  getContext()     { return this.ctx; }
+  getCanvas()      { return this.canvas; }
+  getRenderer()    { return this.renderer; }
 
   resize(width, height) {
     this.canvas.width  = width;
     this.canvas.height = height;
-    // при необходимости переконфигурировать контекст/рендерер...
+    // здесь можно будет пересчитать матрицы проекции при ресайзе
   }
 }
