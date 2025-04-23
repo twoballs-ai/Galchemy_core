@@ -1,6 +1,6 @@
 import { Renderer } from './Renderer.js';
 // import { mat4 } from 'gl-matrix';
-import { mat4 } from '../../gl-matrix/src/index.js';
+import { mat4 } from '../../vendor/gl-matrix/index.js';
 
 export class WebGLRenderer3D extends Renderer {
   constructor(graphicalContext, backgroundColor) {

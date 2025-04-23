@@ -4,7 +4,7 @@ const game = Game.init({
   canvasId: "canvas",
   w: 1280,
   h: 720,
-  renderType: "webgl",
+  renderType: "webgl3d",
   debug: false
 });
 
