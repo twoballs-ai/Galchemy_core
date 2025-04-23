@@ -79,9 +79,7 @@ export class Core {
 
     // 5) рендер сцены (с debug‑рамками внутри)
     this.renderer.render(this.scene, this.debug);
-    if (this.debug) {
-      this._drawDebugOverlay();
-    }
+
     // 6) GUI
     if (this.gui) {
       this.gui.render(this.ctx);

@@ -16,7 +16,6 @@ export class GraphicalContext {
       case '2d':
         this.ctx = this.canvas.getContext('2d');
         break;
-      case 'webgl':
       case 'webgl2d':
       case 'webgl3d':
         this.ctx = this.canvas.getContext('webgl') || this.canvas.getContext('experimental-webgl');
@@ -39,7 +38,6 @@ export class GraphicalContext {
       case 'webgl2d':
         this.renderer = new WebGLRenderer2D(this, normalizedBg);
         break;
-      case 'webgl':
       case 'webgl3d':
         this.renderer = new WebGLRenderer3D(this, normalizedBg);
         break;
@@ -49,9 +47,9 @@ export class GraphicalContext {
     }
   }
 
-  getContext()     { return this.ctx; }
-  getCanvas()      { return this.canvas; }
-  getRenderer()    { return this.renderer; }
+  getContext()  { return this.ctx; }
+  getCanvas()   { return this.canvas; }
+  getRenderer() { return this.renderer; }
 
   resize(width, height) {
     this.canvas.width  = width;

@@ -19,7 +19,35 @@ export class WebGLRenderer3D extends Renderer {
     this.gl.enable(this.gl.DEPTH_TEST);
     this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
   }
-
+  _drawDebugGrid(size = 10, step = 1) {
+    const lines = [];
+  
+    for (let i = -size; i <= size; i += step) {
+      // линии вдоль X (горизонтальные)
+      lines.push(-size, i, 0, size, i, 0);
+  
+      // линии вдоль Y (вертикальные)
+      lines.push(i, -size, 0, i, size, 0);
+    }
+  
+    const vertices = new Float32Array(lines);
+  
+    const buffer = this.gl.createBuffer();
+    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, buffer);
+    this.gl.bufferData(this.gl.ARRAY_BUFFER, vertices, this.gl.STATIC_DRAW);
+  
+    const aPosition = this.gl.getAttribLocation(this.shaderProgram, 'aVertexPosition');
+    this.gl.enableVertexAttribArray(aPosition);
+    this.gl.vertexAttribPointer(aPosition, 3, this.gl.FLOAT, false, 0, 0);
+  
+    const modelMatrix = mat4.create();
+    this.gl.uniformMatrix4fv(this.uModel, false, modelMatrix);
+  
+    this.gl.drawArrays(this.gl.LINES, 0, vertices.length / 3);
+  
+    this.gl.disableVertexAttribArray(aPosition);
+    this.gl.deleteBuffer(buffer);
+  }
   _initShaders() {
     const vertexSrc = `
       attribute vec3 aVertexPosition;
@@ -98,12 +126,17 @@ export class WebGLRenderer3D extends Renderer {
     this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
   }
 
-  render(scene) {
-    this.clear();
-    scene.objects.forEach(obj => {
-      if (typeof obj.renderWebGL3D === 'function') {
-        obj.renderWebGL3D(this.gl, this.shaderProgram, this.uModel);
-      }
-    });
+render(scene, debug = false) {
+  this.clear();
+  
+  if (debug) {
+    this._drawDebugGrid();
   }
+
+  scene.objects.forEach(obj => {
+    if (typeof obj.renderWebGL3D === 'function') {
+      obj.renderWebGL3D(this.gl, this.shaderProgram, this.uModel);
+    }
+  });
+}
 }
