@@ -5,7 +5,7 @@
 import { Renderer } from './Renderer.js';
 import { mat4 }     from '../../vendor/gl-matrix/index.js';
 
-export class WebGLRenderer3D extends Renderer {
+export class WebGLRenderer extends Renderer {
   constructor(graphicalContext, backgroundColor) {
     super(graphicalContext.getContext(), backgroundColor);
 

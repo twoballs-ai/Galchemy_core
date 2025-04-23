@@ -5,7 +5,6 @@ const game = Game.init({
   w: 1200,
   h: 800,
   bg: "#222",
-  renderType: "2d",
   debug: false 
 }).physics({ gravity: 0 });
 const gui = game.setGUI({

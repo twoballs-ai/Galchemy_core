@@ -14,13 +14,12 @@ class GameFacade {
     this.input = new Input();
   }
 
-  init({ canvasId, w, h, bg = '#000', debug = false, renderType = '2d' }) {
+  init({ canvasId, w, h, bg = '#000', debug = false }) {
     this.core = new Core({
       canvasId,
       width: w,
       height: h,
       backgroundColor: bg,
-      renderType,
       debug
     });
     this.core.input = this.input;

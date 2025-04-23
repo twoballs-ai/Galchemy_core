@@ -6,11 +6,11 @@ import { Input }    from './Input.js';
 import { GraphicalContext } from '../core/GraphicalContext.js';
 
 export class Core {
-  constructor({ canvasId, width, height, backgroundColor = '#000', renderType = '2d', debug = false }) {
+  constructor({ canvasId, width, height, backgroundColor = '#000', debug = false }) {
     this.canvas = document.getElementById(canvasId);
     this.canvas.width  = width;
     this.canvas.height = height;
-    this.graphicalContext = new GraphicalContext(canvasId, renderType, backgroundColor, width, height);
+    this.graphicalContext = new GraphicalContext(canvasId,  backgroundColor, width, height);
     this.ctx = this.graphicalContext.getContext()
     this.renderer = this.graphicalContext.getRenderer(); 
     this.canvas = this.graphicalContext.getCanvas();
