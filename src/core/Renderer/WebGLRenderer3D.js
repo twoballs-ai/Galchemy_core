@@ -1,142 +1,194 @@
+/* ===================================================================== *
+ *  src/Renderer/WebGLRenderer3D.js
+ * ===================================================================== */
+
 import { Renderer } from './Renderer.js';
-// import { mat4 } from 'gl-matrix';
-import { mat4 } from '../../vendor/gl-matrix/index.js';
+import { mat4 }     from '../../vendor/gl-matrix/index.js';
 
 export class WebGLRenderer3D extends Renderer {
   constructor(graphicalContext, backgroundColor) {
     super(graphicalContext.getContext(), backgroundColor);
+
     this.canvas = graphicalContext.getCanvas();
-    this.gl = graphicalContext.getContext();
+    this.gl     = graphicalContext.getContext();
+
+    /* орбитальная камера */
+    this.camYaw   =  0;
+    this.camPitch = -0.6;
+    this.camDist  =  6;
+    this._drag    = null;
+
+    /* сетка */
+    this.gridSize = 10;
+    this.gridStep = 1;
 
     this._initWebGL(backgroundColor);
     this._initShaders();
     this._setupProjection();
+    this._attachControls();
   }
 
-  _initWebGL(bgColor) {
-    const [r, g, b] = typeof bgColor === 'string' ? this._hexToRGB(bgColor) : bgColor;
-    this.gl.clearColor(r, g, b, 1.0);
-    this.gl.enable(this.gl.DEPTH_TEST);
-    this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
-  }
-  _drawDebugGrid(size = 10, step = 1) {
-    const lines = [];
-  
-    for (let i = -size; i <= size; i += step) {
-      // линии вдоль X (горизонтальные)
-      lines.push(-size, i, 0, size, i, 0);
-  
-      // линии вдоль Y (вертикальные)
-      lines.push(i, -size, 0, i, size, 0);
-    }
-  
-    const vertices = new Float32Array(lines);
-  
-    const buffer = this.gl.createBuffer();
-    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, buffer);
-    this.gl.bufferData(this.gl.ARRAY_BUFFER, vertices, this.gl.STATIC_DRAW);
-  
-    const aPosition = this.gl.getAttribLocation(this.shaderProgram, 'aVertexPosition');
-    this.gl.enableVertexAttribArray(aPosition);
-    this.gl.vertexAttribPointer(aPosition, 3, this.gl.FLOAT, false, 0, 0);
-  
-    const modelMatrix = mat4.create();
-    this.gl.uniformMatrix4fv(this.uModel, false, modelMatrix);
-  
-    this.gl.drawArrays(this.gl.LINES, 0, vertices.length / 3);
-  
-    this.gl.disableVertexAttribArray(aPosition);
-    this.gl.deleteBuffer(buffer);
-  }
-  _initShaders() {
-    const vertexSrc = `
-      attribute vec3 aVertexPosition;
-      uniform mat4 uModel;
-      uniform mat4 uView;
-      uniform mat4 uProjection;
+  /* ---------- low-level -------------------------------------------------- */
 
-      void main(void) {
-        gl_Position = uProjection * uView * uModel * vec4(aVertexPosition, 1.0);
-      }
-    `;
-
-    const fragmentSrc = `
-      void main(void) {
-        gl_FragColor = vec4(0.5, 0.8, 1.0, 1.0); // голубой цвет
-      }
-    `;
-
+  _initWebGL(bg) {
+    const [r,g,b] = typeof bg === 'string'
+      ? this._hexToRGB(bg) : bg;
     const gl = this.gl;
-    const vertexShader = this._loadShader(gl.VERTEX_SHADER, vertexSrc);
-    const fragmentShader = this._loadShader(gl.FRAGMENT_SHADER, fragmentSrc);
+    gl.clearColor(r,g,b,1);
+    gl.enable(gl.DEPTH_TEST);
+    gl.viewport(0,0,this.canvas.width,this.canvas.height);
+  }
+  _hexToRGB(hex) { const n=parseInt(hex.slice(1),16);
+    return [(n>>16)/255,((n>>8)&255)/255,(n&255)/255]; }
+  _loadShader(t,s){const gl=this.gl,sh=gl.createShader(t);
+    gl.shaderSource(sh,s);gl.compileShader(sh);return sh;}
 
-    this.shaderProgram = gl.createProgram();
-    gl.attachShader(this.shaderProgram, vertexShader);
-    gl.attachShader(this.shaderProgram, fragmentShader);
+  /* ---------- шейдер  ---------------------------------------------------- */
+
+  _initShaders() {
+    const v=`
+      attribute vec3 aVertexPosition;
+      uniform mat4 uModel,uView,uProjection;
+      void main(){gl_Position=uProjection*uView*uModel*
+                 vec4(aVertexPosition,1.0);} `;
+    const f=`
+      precision mediump float;
+      uniform vec4 uColor;
+      void main(){gl_FragColor=uColor;}`;
+    const gl=this.gl;
+    const vs=this._loadShader(gl.VERTEX_SHADER,v);
+    const fs=this._loadShader(gl.FRAGMENT_SHADER,f);
+    this.shaderProgram=gl.createProgram();
+    gl.attachShader(this.shaderProgram,vs);
+    gl.attachShader(this.shaderProgram,fs);
     gl.linkProgram(this.shaderProgram);
-
-    if (!gl.getProgramParameter(this.shaderProgram, gl.LINK_STATUS)) {
-      console.error('Shader program error:', gl.getProgramInfoLog(this.shaderProgram));
-    }
-
     gl.useProgram(this.shaderProgram);
 
-    this.aVertexPosition = gl.getAttribLocation(this.shaderProgram, 'aVertexPosition');
-    gl.enableVertexAttribArray(this.aVertexPosition);
-
-    this.uModel      = gl.getUniformLocation(this.shaderProgram, 'uModel');
-    this.uView       = gl.getUniformLocation(this.shaderProgram, 'uView');
-    this.uProjection = gl.getUniformLocation(this.shaderProgram, 'uProjection');
+    this.uModel =gl.getUniformLocation(this.shaderProgram,'uModel');
+    this.uView  =gl.getUniformLocation(this.shaderProgram,'uView');
+    this.uProj  =gl.getUniformLocation(this.shaderProgram,'uProjection');
+    this.uColor =gl.getUniformLocation(this.shaderProgram,'uColor');
+    this.aPos   =gl.getAttribLocation (this.shaderProgram,'aVertexPosition');
+    gl.enableVertexAttribArray(this.aPos);
   }
 
-  _setupProjection() {
-    const aspect = this.canvas.width / this.canvas.height;
-    const fov = Math.PI / 4;
-    const near = 0.1;
-    const far = 100.0;
-
-    const projectionMatrix = mat4.create();
-    mat4.perspective(projectionMatrix, fov, aspect, near, far);
-
-    const viewMatrix = mat4.create();
-    mat4.lookAt(viewMatrix, [0, 0, 5], [0, 0, 0], [0, 1, 0]);
-
-    this.gl.uniformMatrix4fv(this.uProjection, false, projectionMatrix);
-    this.gl.uniformMatrix4fv(this.uView, false, viewMatrix);
+  _setupProjection(){
+    const proj=mat4.create();
+    mat4.perspective(proj,Math.PI/4,
+      this.canvas.width/this.canvas.height,0.1,100);
+    this.gl.uniformMatrix4fv(this.uProj,false,proj);
   }
 
-  _loadShader(type, src) {
-    const shader = this.gl.createShader(type);
-    this.gl.shaderSource(shader, src);
-    this.gl.compileShader(shader);
-    if (!this.gl.getShaderParameter(shader, this.gl.COMPILE_STATUS)) {
-      console.error('Shader compile error:', this.gl.getShaderInfoLog(shader));
-      this.gl.deleteShader(shader);
-      return null;
+  /* ---------- input ------------------------------------------------------ */
+
+  _attachControls(){
+    this.canvas.addEventListener('mousedown',e=>{
+      if(e.button===0) this._drag={x:e.clientX,y:e.clientY};
+    });
+    window.addEventListener('mousemove',e=>{
+      if(!this._drag) return;
+      const dx=e.clientX-this._drag.x,dy=e.clientY-this._drag.y;
+      this._drag={x:e.clientX,y:e.clientY};
+      this.camYaw+=dx*0.005;
+      this.camPitch+=dy*0.005;
+      this.camPitch=Math.max(-1.55,Math.min(1.55,this.camPitch));
+    });
+    window.addEventListener('mouseup',()=>this._drag=null);
+    this.canvas.addEventListener('wheel',e=>{
+      e.preventDefault();
+      this.camDist*=e.deltaY>0?1.1:0.9;
+      this.camDist=Math.min(Math.max(this.camDist,1),50);
+    });
+    window.addEventListener('keydown',e=>{
+      switch(e.key){
+        case '+':case'=':this.gridSize=Math.min(this.gridSize+1,50);break;
+        case '-':case'_':this.gridSize=Math.max(this.gridSize-1,1);break;
+        case ']':        this.gridStep=Math.min(this.gridStep+1,10);break;
+        case '[':        this.gridStep=Math.max(this.gridStep-1,1);break;
+      }
+    });
+  }
+
+  /* ---------- helpers ---------------------------------------------------- */
+
+  _drawLines(v,color){
+    const gl=this.gl,buf=gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER,buf);
+    gl.bufferData(gl.ARRAY_BUFFER,v,gl.STATIC_DRAW);
+    gl.vertexAttribPointer(this.aPos,3,gl.FLOAT,false,0,0);
+    gl.uniform4fv(this.uColor,color);
+    gl.drawArrays(gl.LINES,0,v.length/3);
+    gl.deleteBuffer(buf);
+  }
+
+  /* ---------- GRID ------------------------------------------------------- */
+
+  _drawGrid(){
+    const s=this.gridSize,st=this.gridStep;
+    const lines=[];                        // обычные клетки
+    const axes =[];                        // центральные оси
+
+    for(let i=-s;i<=s;i+=st){
+      // X-параллельные (по Z)
+      (i===0?axes:lines).push(-s,0,i, s,0,i);
+      // Z-параллельные (по X)
+      (i===0?axes:lines).push(i,0,-s, i,0, s);
     }
-    return shader;
+    /* обычная сетка */
+    this.gl.uniformMatrix4fv(this.uModel,false,mat4.create());
+    this._drawLines(new Float32Array(lines),[0.45,0.45,0.45,1]);
+
+    /* центральные оси ярче */
+    this._drawLines(new Float32Array(axes),
+                    [0.9,0.2,0.2,1]); // красный / тёмно-синий, чтобы
   }
 
-  _hexToRGB(hex) {
-    const bigint = parseInt(hex.replace('#', ''), 16);
-    return [(bigint >> 16) / 255, ((bigint >> 8) & 255) / 255, (bigint & 255) / 255];
+  /* ---------- GIZMO ------------------------------------------------------ */
+
+  _drawGizmo(){
+    const len=1.2;
+    const v=new Float32Array([
+      0,0,0, len,0,0,  0,0,0, 0,len,0,   0,0,0, 0,0,len
+    ]);
+    /* ортографию под гизмo */
+    const proj=mat4.create();mat4.ortho(proj,0,50,0,50,-10,10);
+    const view=mat4.create();
+    const model=mat4.create();mat4.translate(model,model,[8,8,0]);
+
+    this.gl.uniformMatrix4fv(this.uProj,false,proj);
+    this.gl.uniformMatrix4fv(this.uView,false,view);
+    this.gl.uniformMatrix4fv(this.uModel,false,model);
+
+    this._drawLines(v.subarray(0,2*3), [1,0,0,1]); // X
+    this._drawLines(v.subarray(2*3,4*3),[0,1,0,1]); // Y
+    this._drawLines(v.subarray(4*3),    [0,0,1,1]); // Z
+
+    this._setupProjection(); // вернём перспективу
   }
 
-  clear() {
-    this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
-  }
+  /* ---------- основной рендер-проход ------------------------------------ */
 
-render(scene, debug = false) {
-  this.clear();
-  
-  if (debug) {
-    this._drawDebugGrid();
-  }
+  clear(){this.gl.clear(this.gl.COLOR_BUFFER_BIT|this.gl.DEPTH_BUFFER_BIT);}
+  render(scene,debug=false){
+    this.clear();
 
-  scene.objects.forEach(obj => {
-    if (typeof obj.renderWebGL3D === 'function') {
-      obj.renderWebGL3D(this.gl, this.shaderProgram, this.uModel);
-    }
-  });
-}
+    /* camera view */
+    const eye=[
+      Math.cos(this.camYaw)*Math.cos(this.camPitch)*this.camDist,
+      Math.sin(this.camPitch)*this.camDist,
+      Math.sin(this.camYaw)*Math.cos(this.camPitch)*this.camDist
+    ];
+    const view=mat4.create();
+    mat4.lookAt(view,eye,[0,0,0],[0,1,0]);
+    this.gl.uniformMatrix4fv(this.uView,false,view);
+
+    if(debug) this._drawGrid();
+
+    scene.objects.forEach(o=>{
+      if(typeof o.renderWebGL3D==='function')
+        o.renderWebGL3D(this.gl,this.shaderProgram,this.uModel);
+    });
+
+    if(debug) this._drawGizmo();
+  }
 }
