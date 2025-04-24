@@ -61,35 +61,35 @@ export class Core {
     const dt = (ts - this.lastTime) / 1000;
     this.lastTime = ts;
 
-    // 1) действия (стрельба и др.)
+    // Действия (стрельба и др.)
     for (const b of this.actionBindings) {
-      this.input.bindActions(b.gameObject, b.map, this);
+        this.input.bindActions(b.gameObject, b.map, this);
     }
 
-    // 2) физика + коллизии внутри Physics
-    if (this.physics) {
-      this.physics.update(dt);
-    }
+    // Физика + коллизии
+    if (this.physics) this.physics.update(dt);
 
-    // 3) логика объектов
+    // Логика объектов
     this.scene.update(dt);
 
-    // 4) debug‑лог параметров
-
-
-    // 5) рендер сцены (с debug‑рамками внутри)
+    // Рендер сцены (с debug-рамками внутри)
     this.renderer.render(this.scene, this.debug);
 
-    // 6) GUI
+    // GUI (добавляем HUD-спрайты в SpriteRenderer)
     if (this.gui) {
-      this.gui.render(this.ctx);
+        this.gui.render(
+            this.graphicalContext.getContext(),
+            this.renderer.spriteRenderer
+        );
     }
 
-    // 7) удаление «мёртвых»
+    // 👉 flush() спрайтов здесь не нужен, уже сделан внутри WebGLRenderer!
+
+    // Удаление мёртвых объектов
     this.scene.objects = this.scene.objects.filter(o => !o.toDelete && !o.dead);
 
     requestAnimationFrame(this.loop);
-  }
+}
   _drawDebugOverlay() {
     const ctx = this.ctx;
     ctx.save();

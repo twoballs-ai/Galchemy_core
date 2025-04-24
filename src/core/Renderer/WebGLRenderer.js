@@ -4,7 +4,7 @@
 
 import { Renderer } from './Renderer.js';
 import { mat4 }     from '../../vendor/gl-matrix/index.js';
-
+import { SpriteRenderer }  from './SpriteRenderer.js';  
 export class WebGLRenderer extends Renderer {
   constructor(graphicalContext, backgroundColor) {
     super(graphicalContext.getContext(), backgroundColor);
@@ -26,6 +26,13 @@ export class WebGLRenderer extends Renderer {
     this._initShaders();
     this._setupProjection();
     this._attachControls();
+
+        /* 2-D батчер спрайтов  ─────────────────────────────────────────── */
+        this.spriteRenderer = new SpriteRenderer(                // ← 2) создаём
+          this.gl,
+          this.canvas.width,
+          this.canvas.height
+        );
   }
 
   /* ---------- low-level -------------------------------------------------- */
@@ -169,26 +176,40 @@ export class WebGLRenderer extends Renderer {
   /* ---------- основной рендер-проход ------------------------------------ */
 
   clear(){this.gl.clear(this.gl.COLOR_BUFFER_BIT|this.gl.DEPTH_BUFFER_BIT);}
-  render(scene,debug=false){
+ render(scene, debug = false) {
     this.clear();
 
-    /* camera view */
-    const eye=[
-      Math.cos(this.camYaw)*Math.cos(this.camPitch)*this.camDist,
-      Math.sin(this.camPitch)*this.camDist,
-      Math.sin(this.camYaw)*Math.cos(this.camPitch)*this.camDist
+    // 3D camera view setup
+    const eye = [
+        Math.cos(this.camYaw) * Math.cos(this.camPitch) * this.camDist,
+        Math.sin(this.camPitch) * this.camDist,
+        Math.sin(this.camYaw) * Math.cos(this.camPitch) * this.camDist
     ];
-    const view=mat4.create();
-    mat4.lookAt(view,eye,[0,0,0],[0,1,0]);
-    this.gl.uniformMatrix4fv(this.uView,false,view);
+    const view = mat4.create();
+    mat4.lookAt(view, eye, [0, 0, 0], [0, 1, 0]);
+    this.gl.uniformMatrix4fv(this.uView, false, view);
 
-    if(debug) this._drawGrid();
-
-    scene.objects.forEach(o=>{
-      if(typeof o.renderWebGL3D==='function')
-        o.renderWebGL3D(this.gl,this.shaderProgram,this.uModel);
+    // Рендер 3D-объектов
+    scene.objects.forEach(o => {
+        if (typeof o.renderWebGL3D === 'function') {
+             o.renderWebGL3D(this.gl, this.shaderProgram,
+                               this.uModel, this.uColor);
+        }
     });
 
-    if(debug) this._drawGizmo();
-  }
+    if (debug) {
+        this._drawGrid();
+        this._drawGizmo();
+    }
+
+    // 👉 Рендер 2D-спрайтов через SpriteRenderer
+    scene.objects.forEach(o => {
+        if (typeof o.renderWebGL2D === 'function') {
+            o.renderWebGL2D(this.spriteRenderer);
+        }
+    });
+
+    // 👉 Флашим все спрайты
+    this.spriteRenderer.flush();
+}
 }

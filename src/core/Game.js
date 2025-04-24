@@ -1,13 +1,16 @@
 // src/GameFacade.js
 import { Core }        from './Core.js';
-import { GameObject }  from './GameObjects/GameObject.js';
+import { GameObject2D }  from './GameObjects/GameObject2D.js';
 import { Input }       from './Input.js';
 import Entity          from './GameObjects/EntityWrapper.js';
 import { GUI }         from '../utils/GUI.js';
 import { getSize }     from '../utils/getSize.js';
 import { GameObject3D } from './GameObjects/GameObject3D.js';
 import { loadGLB } from '../utils/GLTFLoader.js';
-import { createSphereGeometry } from '../utils/createSphereGeometry.js';
+import { createSphereGeometry } from './GameObjects/primitives/3dPrimitives/createSphereGeometry.js';
+
+import { createCubeGeometry }    from './GameObjects/primitives/3dPrimitives/createCubeGeometry.js';
+import { createCylinderGeometry }from './GameObjects/primitives/3dPrimitives/createCylinderGeometry.js';
 class GameFacade {
   constructor() {
     this.core  = null;
@@ -34,27 +37,38 @@ class GameFacade {
   spawn(img, x, y, opts = {}) {
     const { layer = 0 } = opts;
     const [w, h] = getSize(opts);
-
-    const go = new GameObject({
-      imageSrc : opts.image || img,
-      x, y,
-      width    : w,
-      height   : h,
-      physics  : false,
-      collision: true,
-      layer    : layer
-    });
+   const go = new GameObject2D(this.core.ctx, {
+         imageSrc : opts.image || img,
+        x, y,
+        width : w,
+        height: h,
+        layer,
+        physics : false,
+       collision: true,
+        speed   : opts.speed ?? 200
+     });
 
     go.speed = opts.speed ?? 200;
     this.core.add(go);
     return new Entity(go, this.core, this.input);
   }
-  spawnSpherePlanet(radius = 1, segments = 24, position = [0, 0, -5]) {
-    const gl = this.core.ctx;
-    const geometry = createSphereGeometry(radius, segments);
-    const go = new GameObject3D(gl, { mesh: geometry, position });
-    this.core.add(go);
-    return go;
+  spawnSphere(r=1,seg=24,pos=[0,0,-5],color='#ffffff'){
+    const gl=this.core.ctx;
+    const mesh=createSphereGeometry(r,seg);
+    const go = new GameObject3D(gl,{mesh,position:pos,color});
+    this.core.add(go); return new Entity(go, this.core, this.input);
+  }
+  spawnCube(size=1,pos=[0,0,-5],color='#e74c3c'){
+    const gl=this.core.ctx;
+    const mesh=createCubeGeometry(size);
+    const go=new GameObject3D(gl,{mesh,position:pos,color});
+    this.core.add(go); return new Entity(go, this.core, this.input);
+  }
+  spawnCylinder(r=1,h=2,pos=[0,0,-5],color='#2ecc71'){
+    const gl=this.core.ctx;
+    const mesh=createCylinderGeometry(r,h);
+    const go=new GameObject3D(gl,{mesh,position:pos,color});
+    this.core.add(go); return new Entity(go, this.core, this.input);
   }
   spawnGroup({ images, pattern = 'fallRandom', every = 2000, score = 5, layer = 0, ...sizeOpts } = {}) {
     const makeOne = () => {
