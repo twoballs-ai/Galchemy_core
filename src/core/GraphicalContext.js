@@ -27,9 +27,10 @@ export class GraphicalContext {
   getCanvas()   { return this.canvas; }
   getRenderer() { return this.renderer; }
 
-  resize(w, h) {
-    this.canvas.width  = w;
-    this.canvas.height = h;
-    // TODO: пересчёт проекций при необходимости
-  }
+resize(w, h) {
+  this.canvas.width  = w;
+  this.canvas.height = h;
+  this.ctx.viewport(0, 0, w, h);
+  this.renderer.resize?.(w, h);          // уведомляем рендерер
+}
 }

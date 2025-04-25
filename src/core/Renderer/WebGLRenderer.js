@@ -212,4 +212,10 @@ export class WebGLRenderer extends Renderer {
     // 👉 Флашим все спрайты
     this.spriteRenderer.flush();
 }
+
+resize(w, h) {
+  this.gl.viewport(0, 0, w, h);
+  this._setupProjection();               // пересчёт перспективы
+  this.spriteRenderer.resize(w, h);
+}
 }

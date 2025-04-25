@@ -56,7 +56,9 @@ class Scene {
       this.current = this.scenes.get(name);
       this.emitter.emit('sceneChanged', { scene: name });
     }
-  
+    changeScene(name) {          // 👈 новый «псевдоним»
+      this.switchScene(name);
+    }
     getCurrentScene() {
       return this.current;
     }

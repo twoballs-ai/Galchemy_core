@@ -3,7 +3,6 @@ import { Core }        from './Core.js';
 import { GameObject2D }  from './GameObjects/GameObject2D.js';
 import { Input }       from './Input.js';
 import Entity          from './GameObjects/EntityWrapper.js';
-import { GUI }         from '../utils/GUI.js';
 import { getSize }     from '../utils/getSize.js';
 import { GameObject3D } from './GameObjects/GameObject3D.js';
 import { loadGLB } from '../utils/GLTFLoader.js';
@@ -31,7 +30,6 @@ class GameFacade {
   }
 
   setDebug(on = true)         { this.core.setDebug(on); return this; }
-  setGUI(cfg = {})            { const gui = new GUI(cfg); this.core.setGUI(gui); return gui; }
   physics({ gravity = 0 } = {}){ this.core.enablePhysics({ gravity }); return this; }
 
   spawn(img, x, y, opts = {}) {
