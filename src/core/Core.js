@@ -5,7 +5,7 @@ import { Input }          from './Input.js';
 import { GraphicalContext } from '../core/GraphicalContext.js';
 
 export class Core {
-  constructor({ canvasId, width, height, backgroundColor = '#000', debug = false }) {
+  constructor({ canvasId, width, height, backgroundColor = '#000' }) {
     /* ── графический контекст ─────────────────────────────────────────── */
     this.gc      = new GraphicalContext(canvasId, backgroundColor, width, height);
     this.canvas  = this.gc.getCanvas();
@@ -22,7 +22,8 @@ export class Core {
     this.actionBindings= [];
 
     /* ── отладка / режимы ──────────────────────────────────────────────── */
-    this.debug   = debug;
+      this.debugLogging = false;   // только текстовые логи в консоль
+       this.showHelpers  = false;
     this.mode    = null;     // EditorMode | PreviewMode
     this.camera  = null;
 
@@ -30,10 +31,11 @@ export class Core {
     this.lastTime = 0;
     this.loop     = this.loop.bind(this);
   }
-
+  getSceneManager() { return this.sceneManager; }
   /* ---------- публичные API ---------- */
 
-  setDebug(flag)              { this.debug = flag; }
+    setDebugLogging(on) { this.debugLogging = !!on; }
+    setShowHelpers(on)  { this.showHelpers  = !!on; }
   enablePhysics({ gravity=0 }){ this.physics = new Physics(gravity); }
   add(...objs)                { objs.forEach(o => this.scene.add(o)); }
 
@@ -69,7 +71,14 @@ export class Core {
     this.physics?.update?.(dt);
 
     this.scene.update(dt);
-    this.renderer.render(this.scene, this.debug);
+      this.renderer.render(this.scene, this.showHelpers);
+    
+      /* 2) текстовый вывод в консоль */
+      if (this.debugLogging) {
+          console.log(
+            `[dt=${dt.toFixed(3)}] objs=${this.scene.objects.length}`
+          );
+      }
 
     requestAnimationFrame(this.loop);
   }

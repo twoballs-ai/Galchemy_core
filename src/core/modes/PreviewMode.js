@@ -1,8 +1,10 @@
-import { BaseMode }   from '../BaseMode.js';
+import { BaseMode }   from './BaseMode.js';
 import { GameCamera } from '../cameras/GameCamera.js';
 
 export class PreviewMode extends BaseMode {
   enter(core) {
+    core.setShowHelpers(false);      // сетка + gizmo
+    core.setDebugLogging(true); 
     super.enter(core);
     core.camera = new GameCamera(core.canvas.width, core.canvas.height);
     core.setDebug(false);

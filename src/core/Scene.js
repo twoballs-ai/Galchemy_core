@@ -12,10 +12,14 @@ export class Scene {
     this.updateHooks.push(fn);
   }
 
-  update(deltaTime) {
-    // обновляем все объекты
-    this.objects.forEach(obj => obj.update(deltaTime));
-    // запускаем все хуки
-    this.updateHooks.forEach(fn => fn(deltaTime));
-  }
+ update(deltaTime) {
+   // обновляем только тех, у кого есть update()
+   this.objects.forEach(obj => {
+     if (typeof obj.update === 'function') {
+       obj.update(deltaTime);
+     }
+   });
+   // запускаем все хуки
+   this.updateHooks.forEach(fn => fn(deltaTime));
+ }
 }
