@@ -3,6 +3,7 @@ import { GameObject3D }            from './primitives/GameObject3D.js';
 import { createSphereGeometry }    from './primitives/3dPrimitives/createSphereGeometry.js';
 import { createCubeGeometry }      from './primitives/3dPrimitives/createCubeGeometry.js';
 import { createCylinderGeometry }  from './primitives/3dPrimitives/createCylinderGeometry.js';
+import { GameObjectCamera } from './GameObjectCamera.js';
 import defaultTextureSrc           from '../../assets/Metal052C_1K-JPG/Metal052C_1K-JPG_Color.jpg';  // добавили!
 
 const DEFAULT_PRIMITIVE_COLOR = '#7f7f7f'; // матово-серый
@@ -70,4 +71,8 @@ primitiveFactory.register(
       color,
       textureSrc: texture,
     })
+);
+primitiveFactory.register(
+  'camera',
+  (gl, opts) => new GameObjectCamera(gl, opts)
 );

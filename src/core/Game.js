@@ -68,7 +68,23 @@ class GameFacade {
     this.core.add(go);
     return new Entity(go, this.core, this.input);
   }
-
+  spawnCamera(opts = {}) {
+    const camObj = { type: 'camera', ...opts };
+    this.core.add(camObj);
+    return camObj;
+  }
+  
+  spawnLight(opts = {}) {
+    const lightObj = { type: 'light', ...opts };
+    this.core.add(lightObj);
+    return lightObj;
+  }
+  
+  spawnTerrain(opts = {}) {
+    const terrainObj = { type: 'terrain', ...opts };
+    this.core.add(terrainObj);
+    return terrainObj;
+  }
   /* «сахар»-методы ------------------------------------------- */
 
   spawnSphere   (r=2, seg=24, pos=[0,0,-5], color='#fff')      {

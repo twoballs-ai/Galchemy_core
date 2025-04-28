@@ -122,14 +122,19 @@ export class WebGLRenderer extends Renderer {
   }
 
   _setupProjection() {
+    const camera = this.core?.camera;
     const proj = mat4.create();
-    mat4.perspective(
-      proj,
-      Math.PI / 4,
-      this.canvas.width / this.canvas.height,
-      0.1,
-      100
-    );
+    if (camera?.isCamera) {
+      mat4.perspective(
+        proj,
+        (camera.fov * Math.PI) / 180,
+        this.canvas.width / this.canvas.height,
+        camera.near,
+        camera.far
+      );
+    } else {
+      mat4.perspective(proj, Math.PI / 4, this.canvas.width / this.canvas.height, 0.1, 100);
+    }
     this.gl.useProgram(this.shaderProgram);
     this.gl.uniformMatrix4fv(this.uProj, false, proj);
   }

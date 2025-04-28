@@ -1,17 +1,20 @@
-import { BaseMode }   from './BaseMode.js';
-import { GameCamera } from '../cameras/GameCamera.js';
+import { BaseMode } from './BaseMode.js';
 
 export class PreviewMode extends BaseMode {
   enter(core) {
-    core.setShowHelpers(false);      // сетка + gizmo
-    core.setDebugLogging(true); 
+    core.setShowHelpers(false);
+    core.setDebugLogging(false);
     super.enter(core);
-    core.camera = new GameCamera(core.canvas.width, core.canvas.height);
-    core.setDebug(false);
+
+    // 🆕 Если есть активная камера на сцене — использовать её
+    if (core.scene.activeCamera) {
+      core.camera = core.scene.activeCamera;
+    } else {
+      console.warn('Нет активной камеры в сцене! Используется дефолтная');
+    }
   }
 
   update(dt) {
-    // игровая логика сцены
     this.core.scene.update(dt);
   }
 }
