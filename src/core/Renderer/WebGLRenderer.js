@@ -5,8 +5,9 @@
 import { Renderer } from "./Renderer.js";
 import { mat4 } from "../../vendor/gl-matrix/index.js";
 import { SpriteRenderer } from "./SpriteRenderer.js";
-import { drawGrid }            from "./helpers/GridHelper.js";
-import { drawGizmo }           from "./helpers/GizmoHelper.js";
+import { drawGrid } from "./helpers/GridHelper.js";
+import { drawGizmo } from "./helpers/GizmoHelper.js";
+
 export class WebGLRenderer extends Renderer {
   constructor(graphicalContext, backgroundColor) {
     super(graphicalContext.getContext(), backgroundColor);
@@ -16,7 +17,7 @@ export class WebGLRenderer extends Renderer {
 
     /* орбитальная камера */
     this.camYaw = 0;
-    this.camPitch =  0.6; 
+    this.camPitch = 0.6;
     this.camDist = 6;
     this.camTarget = [0, 0, 0];
     this._drag = null;
@@ -30,15 +31,15 @@ export class WebGLRenderer extends Renderer {
     this._setupProjection();
     this._attachControls();
 
-    /* 2-D батчер спрайтов  ─────────────────────────────────────────── */
-    this.spriteRenderer = new SpriteRenderer( // ← 2) создаём
+    /* 2D батчер спрайтов */
+    this.spriteRenderer = new SpriteRenderer(
       this.gl,
       this.canvas.width,
       this.canvas.height
     );
   }
 
-  /* ---------- low-level -------------------------------------------------- */
+  /* ---------- WebGL базовая настройка ---------- */
 
   _initWebGL(bg) {
     const [r, g, b] = typeof bg === "string" ? this._hexToRGB(bg) : bg;
@@ -47,33 +48,59 @@ export class WebGLRenderer extends Renderer {
     gl.enable(gl.DEPTH_TEST);
     gl.viewport(0, 0, this.canvas.width, this.canvas.height);
   }
+
   _hexToRGB(hex) {
     const n = parseInt(hex.slice(1), 16);
     return [(n >> 16) / 255, ((n >> 8) & 255) / 255, (n & 255) / 255];
   }
-  _loadShader(t, s) {
-    const gl = this.gl,
-      sh = gl.createShader(t);
-    gl.shaderSource(sh, s);
-    gl.compileShader(sh);
-    return sh;
+
+  _loadShader(type, source) {
+    const gl = this.gl;
+    const shader = gl.createShader(type);
+    gl.shaderSource(shader, source);
+    gl.compileShader(shader);
+    return shader;
   }
 
-  /* ---------- шейдер  ---------------------------------------------------- */
+  /* ---------- Инициализация шейдера с поддержкой текстур ---------- */
 
   _initShaders() {
-    const v = `
+    const vertexShaderSource = `
       attribute vec3 aVertexPosition;
-      uniform mat4 uModel,uView,uProjection;
-      void main(){gl_Position=uProjection*uView*uModel*
-                 vec4(aVertexPosition,1.0);} `;
-    const f = `
+      attribute vec2 aTexCoord;
+
+      uniform mat4 uModel, uView, uProjection;
+
+      varying vec2 vTexCoord;
+
+      void main() {
+        gl_Position = uProjection * uView * uModel * vec4(aVertexPosition, 1.0);
+        vTexCoord = aTexCoord;
+      }
+    `;
+
+    const fragmentShaderSource = `
       precision mediump float;
+
+      varying vec2 vTexCoord;
+
       uniform vec4 uColor;
-      void main(){gl_FragColor=uColor;}`;
+      uniform bool uUseTexture;
+      uniform sampler2D uTexture;
+
+      void main() {
+        if (uUseTexture) {
+          gl_FragColor = texture2D(uTexture, vTexCoord);
+        } else {
+          gl_FragColor = uColor;
+        }
+      }
+    `;
+
     const gl = this.gl;
-    const vs = this._loadShader(gl.VERTEX_SHADER, v);
-    const fs = this._loadShader(gl.FRAGMENT_SHADER, f);
+    const vs = this._loadShader(gl.VERTEX_SHADER, vertexShaderSource);
+    const fs = this._loadShader(gl.FRAGMENT_SHADER, fragmentShaderSource);
+
     this.shaderProgram = gl.createProgram();
     gl.attachShader(this.shaderProgram, vs);
     gl.attachShader(this.shaderProgram, fs);
@@ -84,8 +111,14 @@ export class WebGLRenderer extends Renderer {
     this.uView = gl.getUniformLocation(this.shaderProgram, "uView");
     this.uProj = gl.getUniformLocation(this.shaderProgram, "uProjection");
     this.uColor = gl.getUniformLocation(this.shaderProgram, "uColor");
+    this.uUseTexture = gl.getUniformLocation(this.shaderProgram, "uUseTexture");
+    this.uTexture = gl.getUniformLocation(this.shaderProgram, "uTexture");
+
     this.aPos = gl.getAttribLocation(this.shaderProgram, "aVertexPosition");
+    this.aTexCoord = gl.getAttribLocation(this.shaderProgram, "aTexCoord");
+
     gl.enableVertexAttribArray(this.aPos);
+    gl.enableVertexAttribArray(this.aTexCoord);
   }
 
   _setupProjection() {
@@ -101,7 +134,7 @@ export class WebGLRenderer extends Renderer {
     this.gl.uniformMatrix4fv(this.uProj, false, proj);
   }
 
-  /* ---------- input ------------------------------------------------------ */
+  /* ---------- Управление камерой ---------- */
 
   _attachControls() {
     this.canvas.addEventListener("mousedown", (e) => {
@@ -111,20 +144,18 @@ export class WebGLRenderer extends Renderer {
         this._drag = { mode: "pan", x: e.clientX, y: e.clientY };
       }
     });
+
     window.addEventListener("mousemove", (e) => {
       const d = this._drag;
       if (!d) return;
       const dx = e.clientX - d.x;
       const dy = e.clientY - d.y;
-      // Обрабатываем по режиму
       if (d.mode === "orbit") {
         this.camYaw += dx * 0.005;
         this.camPitch += dy * 0.005;
         this.camPitch = Math.max(-1.55, Math.min(1.55, this.camPitch));
       } else {
-        // pan
         const panSpeed = 0.01 * this.camDist;
-        // вектор вправо и вперёд относительно yaw
         this.camTarget[0] -=
           (Math.cos(this.camYaw) * dx - Math.sin(this.camYaw) * dy) * panSpeed;
         this.camTarget[2] -=
@@ -133,12 +164,15 @@ export class WebGLRenderer extends Renderer {
       d.x = e.clientX;
       d.y = e.clientY;
     });
+
     window.addEventListener("mouseup", () => (this._drag = null));
+
     this.canvas.addEventListener("wheel", (e) => {
       e.preventDefault();
       this.camDist *= e.deltaY > 0 ? 1.1 : 0.9;
       this.camDist = Math.min(Math.max(this.camDist, 1), 50);
     });
+
     window.addEventListener("keydown", (e) => {
       const k = e.key.toLowerCase();
       const speed = 0.1 * this.camDist;
@@ -149,33 +183,37 @@ export class WebGLRenderer extends Renderer {
     });
   }
 
-  /* ---------- helpers ---------------------------------------------------- */
-
-  _drawLines = (v, color) => {  
-    const gl = this.gl,
-      buf = gl.createBuffer();
+  /* ---------- Помощники ---------- */
+  _drawLines(v, color) {
+    const gl = this.gl;
+    const buf = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, buf);
     gl.bufferData(gl.ARRAY_BUFFER, v, gl.STATIC_DRAW);
+  
+    gl.disableVertexAttribArray(this.aTexCoord); // ← отключаем UV-атрибут
+    gl.uniform1i(this.uUseTexture, false);       // ← отключаем текстуру
     gl.vertexAttribPointer(this.aPos, 3, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(this.aPos);
+  
     gl.uniform4fv(this.uColor, color);
     gl.drawArrays(gl.LINES, 0, v.length / 3);
     gl.deleteBuffer(buf);
   }
 
-
-
-  /* ---------- основной рендер-проход ------------------------------------ */
+  /* ---------- Основной проход рендера ---------- */
 
   clear() {
     this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
   }
+
   render(scene, helpers = false) {
+    const gl = this.gl;
     this.clear();
 
-    // ⬆️ Сначала активируем 3D-шейдерную программу!
-    this.gl.useProgram(this.shaderProgram);
+    gl.useProgram(this.shaderProgram);
 
-    // 3D camera view setup
+// сбросим UV-атрибут: до того, как отрисуем что угодно, он выключен
+    gl.disableVertexAttribArray(this.aTexCoord);
     const eye = [
       this.camTarget[0] +
         Math.cos(this.camYaw) * Math.cos(this.camPitch) * this.camDist,
@@ -185,36 +223,35 @@ export class WebGLRenderer extends Renderer {
     ];
     const view = mat4.create();
     mat4.lookAt(view, eye, this.camTarget, [0, 1, 0]);
-    this.gl.uniformMatrix4fv(this.uView, false, view);
-    // Рендер 3D-объектов
+    gl.uniformMatrix4fv(this.uView, false, view);
+
+    // 🔥 Тут ничего не меняется! Вызываем renderWebGL3D
     scene.objects.forEach((o) => {
       if (typeof o.renderWebGL3D === "function") {
-        o.renderWebGL3D(this.gl, this.shaderProgram, this.uModel, this.uColor);
+        o.renderWebGL3D(gl, this.shaderProgram, this.uModel, this.uColor, this.uUseTexture);
       }
     });
 
     if (helpers) {
       drawGrid(this);
       drawGizmo(this);
-    
-      this._setupProjection();                 // обратно к perspective
-      this.gl.uniformMatrix4fv(this.uView, false, view);
+      this._setupProjection();
+      gl.uniformMatrix4fv(this.uView, false, view);
     }
 
-    // 👉 Рендер 2D-спрайтов через SpriteRenderer
+    // 🔥 2D-рендер тоже не трогаем
     scene.objects.forEach((o) => {
       if (typeof o.renderWebGL2D === "function") {
         o.renderWebGL2D(this.spriteRenderer);
       }
     });
 
-    // 👉 Флашим все спрайты
     this.spriteRenderer.flush();
   }
 
   resize(w, h) {
     this.gl.viewport(0, 0, w, h);
-    this._setupProjection(); // пересчёт перспективы
+    this._setupProjection();
     this.spriteRenderer.resize(w, h);
   }
 }

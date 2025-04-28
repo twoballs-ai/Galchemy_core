@@ -18,16 +18,30 @@ export class GameObject3D {
   constructor(gl, {
     mesh,
     position = [0, 0, 0],
-    color    = '#ffffff'
+    color    = '#ffffff',
+    textureSrc = null,
   }) {
     this.gl       = gl;
     this.position = position.slice();                // база (для корней)
 
     /* цвет → vec4 */
-    this.color = Array.isArray(color)
-      ? (color.length === 3 ? [ ...color, 1 ] : color.slice(0, 4))
-      : hexToRGB(color);           // hexToRGB уже возвращает 4-комп. массив
+    this.color    = Array.isArray(color)
+      ? (color.length === 3 ? [...color, 1] : color.slice(0, 4))
+      : hexToRGB(color);
 
+    this.texture = null;
+    this.textureLoaded = false;
+    console.log(textureSrc)
+    if (textureSrc) {
+      this.texture = this._loadTexture(textureSrc);
+    }
+    if (mesh.texCoords) {
+      this.texCoordBuffer = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, this.texCoordBuffer);
+      gl.bufferData(gl.ARRAY_BUFFER, mesh.texCoords, gl.STATIC_DRAW);
+    } else {
+      this.texCoordBuffer = null;
+    }
     /* ------------ VBO / IBO ------------ */
     this.vertexBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffer);
@@ -43,7 +57,32 @@ export class GameObject3D {
 
     this.aPosLocMap = new WeakMap();   // кеш location’ов
   }
+  _loadTexture(src) {
+    const gl = this.gl;
+    const texture = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, texture);
 
+    // Пустая текстура пока картинка не загрузится
+    const pixel = new Uint8Array([255, 255, 255, 255]);
+    gl.texImage2D(
+      gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0,
+      gl.RGBA, gl.UNSIGNED_BYTE, pixel
+    );
+
+    const image = new Image();
+    image.onload = () => {
+      gl.bindTexture(gl.TEXTURE_2D, texture);
+      gl.texImage2D(
+        gl.TEXTURE_2D, 0, gl.RGBA,
+        gl.RGBA, gl.UNSIGNED_BYTE, image
+      );
+      gl.generateMipmap(gl.TEXTURE_2D);
+      this.textureLoaded = true; 
+    };
+    image.src = src;
+
+    return texture;
+  }
   /*──────────────────── 1. Иерархия ────────────────────*/
   attachTo(parentGO, offset = [0,0,0]) {
     if (this.parent) this.parent.children.delete(this);
@@ -85,25 +124,43 @@ export class GameObject3D {
    * @param {WebGLUniformLocation}  uModel
    * @param {WebGLUniformLocation}  uColor
    */
-  renderWebGL3D(gl, shaderProgram, uModel, uColor) {
-    const posLoc = this._getAttribLocation(shaderProgram);
+  /*──────────────────── Рендер ───────────────────*/
+renderWebGL3D(gl, shaderProgram, uModel, uColor, uUseTexture) {
+  const posLoc = this._getAttribLocation(shaderProgram);
 
-    /* цвет */
+  /* позиция */
+  const modelMatrix = mat4.create();
+  const [wx, wy, wz] = this.worldPosition;
+  mat4.translate(modelMatrix, modelMatrix, [wx, wy, wz]);
+  gl.uniformMatrix4fv(uModel, false, modelMatrix);
+
+  /* цвет или текстура */
+  if (this.texture && this.textureLoaded) {
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, this.texture);
+    gl.uniform1i(uUseTexture, true); // ← используем сохранённую локацию
+  } else {
     gl.uniform4fv(uColor, this.color);
-
-    /* позиция */
-    const modelMatrix = mat4.create();
-    const [wx, wy, wz] = this.worldPosition;   // ← учёт родителей
-    mat4.translate(modelMatrix, modelMatrix, [wx, wy, wz]);
-    gl.uniformMatrix4fv(uModel, false, modelMatrix);
-
-    /* геометрия */
-    gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffer);
-    gl.vertexAttribPointer(posLoc, 3, gl.FLOAT, false, 0, 0);
-    gl.enableVertexAttribArray(posLoc);
-
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.indexBuffer);
-    gl.drawElements(gl.TRIANGLES, this.vertexCount,
-                    this.indexType, 0);
+    gl.uniform1i(uUseTexture, false); // ← используем сохранённую локацию
   }
+
+  /* атрибут позиции */
+  gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffer);
+  gl.vertexAttribPointer(posLoc, 3, gl.FLOAT, false, 0, 0);
+  gl.enableVertexAttribArray(posLoc);
+
+  /* атрибут текстурных координат */
+  const texCoordLoc = gl.getAttribLocation(shaderProgram, "aTexCoord");
+  if (this.texCoordBuffer && texCoordLoc !== -1) {
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.texCoordBuffer);
+    gl.vertexAttribPointer(texCoordLoc, 2, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(texCoordLoc);
+  } else {
+    gl.disableVertexAttribArray(texCoordLoc);
+  }
+
+  /* индексный буфер */
+  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.indexBuffer);
+  gl.drawElements(gl.TRIANGLES, this.vertexCount, this.indexType, 0);
+}
 }

@@ -3,6 +3,7 @@ import { GameObject3D }            from './primitives/GameObject3D.js';
 import { createSphereGeometry }    from './primitives/3dPrimitives/createSphereGeometry.js';
 import { createCubeGeometry }      from './primitives/3dPrimitives/createCubeGeometry.js';
 import { createCylinderGeometry }  from './primitives/3dPrimitives/createCylinderGeometry.js';
+import defaultTextureSrc           from '../../assets/Metal052C_1K-JPG/Metal052C_1K-JPG_Color.jpg';  // добавили!
 
 const DEFAULT_PRIMITIVE_COLOR = '#7f7f7f'; // матово-серый
 
@@ -25,8 +26,11 @@ class PrimitiveFactory {
     if (!builder) {
       throw new Error(`Unknown primitive type: ${type}`);
     }
-    // если color не передали — возьмём DEFAULT
-    const merged = { color: DEFAULT_PRIMITIVE_COLOR, ...opts };
+    const merged = {
+      color: DEFAULT_PRIMITIVE_COLOR,
+      texture: defaultTextureSrc, // ← дефолтная текстура
+      ...opts,
+    };
     return builder(gl, merged);
   }
 }
@@ -37,30 +41,33 @@ export const primitiveFactory = new PrimitiveFactory();
 
 primitiveFactory.register(
   'sphere',
-  (gl, { radius = 1, segments = 24, position = [0, 0, -5], color }) =>
+  (gl, { radius = 1, segments = 24, position = [0, 0, -5], color, texture }) =>
     new GameObject3D(gl, {
       mesh     : createSphereGeometry(radius, segments),
       position,
-      color
+      color,
+      textureSrc: texture,
     })
 );
 
 primitiveFactory.register(
   'cube',
-  (gl, { size = 1, position = [0, 0, -5], color }) =>
+  (gl, { size = 1, position = [0, 0, -5], color, texture }) =>
     new GameObject3D(gl, {
       mesh     : createCubeGeometry(size),
       position,
-      color
+      color,
+      textureSrc: texture,
     })
 );
 
 primitiveFactory.register(
   'cylinder',
-  (gl, { radius = 1, height = 2, position = [0, 0, -5], color }) =>
+  (gl, { radius = 1, height = 2, position = [0, 0, -5], color, texture }) =>
     new GameObject3D(gl, {
       mesh     : createCylinderGeometry(radius, height),
       position,
-      color
+      color,
+      textureSrc: texture,
     })
 );

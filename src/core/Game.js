@@ -18,6 +18,8 @@ class GameFacade {
   constructor() {
     this.core  = null;
     this.input = new Input();
+
+
   }
 
   /* -------- init / режимы ------------------------------------ */
@@ -69,7 +71,7 @@ class GameFacade {
 
   /* «сахар»-методы ------------------------------------------- */
 
-  spawnSphere   (r=1, seg=24, pos=[0,0,-5], color='#fff')      {
+  spawnSphere   (r=2, seg=24, pos=[0,0,-5], color='#fff')      {
     return this.spawnPrimitive('sphere',   { radius:r, segments:seg, position:pos, color });
   }
   spawnCube     (size=1,       pos=[0,0,-5], color='#e74c3c')  {
