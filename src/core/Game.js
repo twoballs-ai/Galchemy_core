@@ -75,7 +75,8 @@ class GameFacade {
     return camObj;
   }
   spawnLight(opts = {}) {
-    const lightObj = { type: 'light', ...opts };
+       const { subtype = 'point', ...rest } = opts;
+   const lightObj = { type: 'light', subtype, ...rest };
     this.core.add(lightObj);
     return lightObj;
   }
