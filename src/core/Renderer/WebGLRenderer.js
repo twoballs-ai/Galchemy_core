@@ -7,7 +7,7 @@ import { mat4 } from "../../vendor/gl-matrix/index.js";
 import { SpriteRenderer } from "./SpriteRenderer.js";
 import { drawGrid } from "./helpers/GridHelper.js";
 import { drawGizmo } from "./helpers/GizmoHelper.js";
-
+import { vec3 } from "../../vendor/gl-matrix/index.js";
 export class WebGLRenderer extends Renderer {
   constructor(graphicalContext, backgroundColor) {
     super(graphicalContext.getContext(), backgroundColor);
@@ -187,7 +187,61 @@ export class WebGLRenderer extends Renderer {
       if (["arrowright", "d"].includes(k)) this.camTarget[0] += speed;
     });
   }
-
+  _drawCameraFrustum(cameraObject) {
+    const gl = this.gl;
+    const cam = cameraObject.camera;
+    const pos = cam.position;
+    const tgt = cam.lookAt;
+  
+    // базовые вектора
+    const forward = vec3.normalize([], vec3.subtract([], tgt, pos));
+    const right   = vec3.normalize([], vec3.cross([], forward, cam.up));
+    const upDir   = vec3.normalize([], vec3.cross([], right, forward));
+  
+    // параметры фрустума
+    const fovRad = (cam.fov * Math.PI) / 180;
+    const nearDist = cam.near;
+    const farDist  = Math.min(cam.far, 20); // ограничим дальнюю плоскость ради наглядности
+  
+    const hNear = Math.tan(fovRad / 2) * nearDist;
+    const wNear = hNear * (cam.width / cam.height);
+    const hFar  = Math.tan(fovRad / 2) * farDist;
+    const wFar  = hFar * (cam.width / cam.height);
+  
+    // центры плоскостей
+    const nc = vec3.scaleAndAdd([], pos, forward, nearDist);
+    const fc = vec3.scaleAndAdd([], pos, forward, farDist);
+  
+    // 4 угла near-плоскости
+    const ntl = vec3.add([], vec3.add([], nc, vec3.scale([], upDir,  hNear)), vec3.scale([], right, -wNear));
+    const ntr = vec3.add([], vec3.add([], nc, vec3.scale([], upDir,  hNear)), vec3.scale([], right,  wNear));
+    const nbl = vec3.add([], vec3.add([], nc, vec3.scale([], upDir, -hNear)), vec3.scale([], right, -wNear));
+    const nbr = vec3.add([], vec3.add([], nc, vec3.scale([], upDir, -hNear)), vec3.scale([], right,  wNear));
+  
+    // 4 угла far-плоскости
+    const ftl = vec3.add([], vec3.add([], fc, vec3.scale([], upDir,  hFar)), vec3.scale([], right, -wFar));
+    const ftr = vec3.add([], vec3.add([], fc, vec3.scale([], upDir,  hFar)), vec3.scale([], right,  wFar));
+    const fbl = vec3.add([], vec3.add([], fc, vec3.scale([], upDir, -hFar)), vec3.scale([], right, -wFar));
+    const fbr = vec3.add([], vec3.add([], fc, vec3.scale([], upDir, -hFar)), vec3.scale([], right,  wFar));
+  
+    // соберём линии: от камеры к дальним углам + рамка фрустума
+    const lines = new Float32Array([
+      // линии от глаза
+      ...pos, ...ftl,
+      ...pos, ...ftr,
+      ...pos, ...fbr,
+      ...pos, ...fbl,
+      // рамка far-плоскости
+      ...ftl, ...ftr,
+      ...ftr, ...fbr,
+      ...fbr, ...fbl,
+      ...fbl, ...ftl,
+      // (можно добавить near-плоскость аналогично)
+    ]);
+  
+    // жёлтый цвет: [r, g, b, a]
+    this._drawLines(lines, [1, 1, 0, 1]);
+  }
   /* ---------- Помощники ---------- */
   _drawLines(v, color) {
     const gl = this.gl;
@@ -204,7 +258,12 @@ export class WebGLRenderer extends Renderer {
     gl.drawArrays(gl.LINES, 0, v.length / 3);
     gl.deleteBuffer(buf);
   }
-
+  setCamera(camera) {
+    this.activeCamera = camera;
+    camera.update();
+    this.gl.uniformMatrix4fv(this.uProj, false, camera.getProjection());
+    this.gl.uniformMatrix4fv(this.uView, false, camera.getView());
+  }
   /* ---------- Основной проход рендера ---------- */
 
   clear() {
@@ -212,13 +271,22 @@ export class WebGLRenderer extends Renderer {
   }
 
   render(scene, helpers = false) {
+    // console.log('[WebGLRenderer.render]', {
+    //   helpers,
+    //   objects: scene.objects.map(o => ({
+    //     id: o.id,
+    //     ctor: o.constructor.name,
+    //     isCamera: !!o.isCamera,
+    //     isEditorMode: !!o.isEditorMode
+    //   }))
+    // });
     const gl = this.gl;
     this.clear();
-
+  
     gl.useProgram(this.shaderProgram);
-
-// сбросим UV-атрибут: до того, как отрисуем что угодно, он выключен
+  
     gl.disableVertexAttribArray(this.aTexCoord);
+  
     const eye = [
       this.camTarget[0] +
         Math.cos(this.camYaw) * Math.cos(this.camPitch) * this.camDist,
@@ -229,31 +297,43 @@ export class WebGLRenderer extends Renderer {
     const view = mat4.create();
     mat4.lookAt(view, eye, this.camTarget, [0, 1, 0]);
     gl.uniformMatrix4fv(this.uView, false, view);
-
-    // 🔥 Тут ничего не меняется! Вызываем renderWebGL3D
+  
+    /* 🔥 1. Рендер обычных игровых объектов */
     scene.objects.forEach((o) => {
-      if (typeof o.renderWebGL3D === "function") {
+      if (!o.isEditorMode && typeof o.renderWebGL3D === "function") {
         o.renderWebGL3D(gl, this.shaderProgram, this.uModel, this.uColor, this.uUseTexture);
       }
     });
-
+  
+    /* 🔥 2. Только если helpers включены, рендерим вспомогательные (камеры и т.п.) */
     if (helpers) {
+      scene.objects.forEach((o) => {
+        if (o.isEditorMode && typeof o.renderWebGL3D === "function") {
+          o.renderWebGL3D(gl, this.shaderProgram, this.uModel, this.uColor, this.uUseTexture);
+        }
+      });
+  
       drawGrid(this);
       drawGizmo(this);
+         // фрустум для каждой камеры-объекта
+    scene.objects.forEach(o => {
+      if (o.isCamera) {
+        this._drawCameraFrustum(o);
+      }
+    });
       this._setupProjection();
       gl.uniformMatrix4fv(this.uView, false, view);
     }
-
-    // 🔥 2D-рендер тоже не трогаем
+  
+    /* 🔥 3. 2D спрайты */
     scene.objects.forEach((o) => {
       if (typeof o.renderWebGL2D === "function") {
         o.renderWebGL2D(this.spriteRenderer);
       }
     });
-
+  
     this.spriteRenderer.flush();
   }
-
   resize(w, h) {
     this.gl.viewport(0, 0, w, h);
     this._setupProjection();

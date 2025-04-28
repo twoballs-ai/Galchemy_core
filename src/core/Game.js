@@ -69,11 +69,11 @@ class GameFacade {
     return new Entity(go, this.core, this.input);
   }
   spawnCamera(opts = {}) {
-    const camObj = { type: 'camera', ...opts };
+    const gl = this.core.ctx;
+    const camObj = primitiveFactory.create('camera', gl, opts);
     this.core.add(camObj);
     return camObj;
   }
-  
   spawnLight(opts = {}) {
     const lightObj = { type: 'light', ...opts };
     this.core.add(lightObj);

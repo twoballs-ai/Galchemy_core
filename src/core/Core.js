@@ -50,7 +50,11 @@ export class Core {
     this.mode = modeInstance;
     this.mode.enter(this);
   }
-
+  setActiveCamera(camera) {
+    this.camera = camera;
+    camera.update();
+    this.renderer.setCamera(camera); 
+  }
   start() {
     if (this._running) return;
     this._running = true;

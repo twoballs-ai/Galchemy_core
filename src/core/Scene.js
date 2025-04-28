@@ -6,6 +6,15 @@ export class Scene {
   }
 
   add(gameObject) {
+    // console.log('[Scene.add] добавляем в сцену:', {
+    //   id: gameObject.id,
+    //   ctor: gameObject.constructor.name,
+    //   isCamera:!!gameObject.isCamera
+    // });
+    this.objects.push(gameObject);
+    if (gameObject.isCamera && !this.activeCamera) {
+      this.setActiveCamera(gameObject);
+    }
     this.objects.push(gameObject);
     if (gameObject.isCamera && !this.activeCamera) {
       this.setActiveCamera(gameObject);  // первая камера — по умолчанию
