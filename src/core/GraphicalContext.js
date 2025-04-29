@@ -1,5 +1,5 @@
 // src/core/GraphicalContext.js
-import { WebGLRenderer } from './Renderer/WebGLRenderer.js';
+import { WebGLRenderer } from './Renderer/WebGLRenderer.ts';
 import { ColorMixin }    from '../utils/ColorMixin.js';
 
 export class GraphicalContext {

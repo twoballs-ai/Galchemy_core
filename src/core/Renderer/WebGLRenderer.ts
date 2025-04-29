@@ -271,15 +271,6 @@ export class WebGLRenderer extends Renderer {
   }
 
   render(scene, helpers = false) {
-    // console.log('[WebGLRenderer.render]', {
-    //   helpers,
-    //   objects: scene.objects.map(o => ({
-    //     id: o.id,
-    //     ctor: o.constructor.name,
-    //     isCamera: !!o.isCamera,
-    //     isEditorMode: !!o.isEditorMode
-    //   }))
-    // });
     const gl = this.gl;
     this.clear();
   

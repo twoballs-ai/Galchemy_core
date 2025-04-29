@@ -1,85 +1,107 @@
 // src/core/GameObjects/GameObjectLight.js
 import { GameObject3D } from './primitives/GameObject3D.js';
 import { mat4 }         from '../../vendor/gl-matrix/index.js';
-import { hexToRGB }     from '../../utils/ColorMixin.js';
 
 export class GameObjectLight extends GameObject3D {
   /**
-   * opts.subtype: 'point'|'directional'|'ambient'
-   * opts.position, opts.direction, opts.color
+   * opts:
+   *   subtype:   'point'|'directional'|'ambient'
+   *   position:  [x,y,z]
+   *   direction: [dx,dy,dz]
+   *   color:     hex-строка, например '#ffff00'
    */
-  constructor(gl, { subtype='point', position=[0,0,0], direction=[0,-1,0], color='#ffff00' }) {
-    // мэш не нужен, будем рисовать «на лету»
-    super(gl, { mesh: { positions: new Float32Array([]), indices: new Uint16Array([]) }, position, color });
-    this.subtype  = subtype;
+  constructor(gl, {
+    subtype    = 'point',
+    position   = [0,0,0],
+    direction  = [0,0,0],
+    color      = '#ffff00',
+  } = {}) {
+    // создаём пустой mesh — рисовать будем динамически
+    super(gl, {
+      mesh: { positions: new Float32Array(), indices: new Uint16Array() },
+      position,
+      color
+    });
+    this.subtype   = subtype;
     this.direction = direction;
-    this.isLight = true;
+    this.isLight   = true;
   }
 
   renderWebGL3D(gl, shaderProgram, uModel, uColor, uUseTexture) {
+    // рисуем только в режиме редактора
     if (!this.isEditorMode) return;
-
-    // подготовим модельку (только translate)
-    const modelMatrix = mat4.create();
-    mat4.translate(modelMatrix, modelMatrix, this.position);
-    gl.uniformMatrix4fv(uModel, false, modelMatrix);
-
-    // отключаем текстуру
+  
+    const model = mat4.create();
+    mat4.translate(model, model, this.position);
+    gl.uniformMatrix4fv(uModel, false, model);
+  
     gl.uniform1i(uUseTexture, false);
-    // цвет
-    const rgba = hexToRGB(this.color);
-    gl.uniform4fv(uColor, rgba);
-
-    // атрибут позиции
-    gl.disableVertexAttribArray(this.aTexCoordLoc);
-    gl.vertexAttribPointer(this.aPosLoc, 3, gl.FLOAT, false, 0, 0);
-    gl.enableVertexAttribArray(this.aPosLoc);
-
-    // в зависимости от subtype рисуем простые линии
+  
     let verts;
+    let color;
+  
     switch (this.subtype) {
       case 'point':
-        // точечный свет: вертикальная линия
-        verts = new Float32Array([
-          0, 0, 0,
-          0, 0.5, 0
-        ]);
+        // Маленькая сфера (звездочка из линий)
+        verts = [];
+        const segs = 12;
+        const radius = 0.2;
+        for (let i = 0; i < segs; i++) {
+          const angle = (i / segs) * Math.PI * 2;
+          verts.push(
+            0, 0, 0,
+            Math.cos(angle) * radius, Math.sin(angle) * radius, 0
+          );
+        }
+        color = [1, 1, 0, 1]; // жёлтый
         break;
+  
       case 'directional':
-        // направленный: линия в направлении direction
+        // Стрелка
+        const dir = this.direction;
+        const len = 0.7;
         verts = new Float32Array([
-          0, 0, 0,
-          this.direction[0], this.direction[1], this.direction[2]
+          0,0,0, dir[0]*len, dir[1]*len, dir[2]*len,
+          // наконечник стрелки
+          dir[0]*len, dir[1]*len, dir[2]*len, dir[0]*len*0.8, dir[1]*len*0.8+0.1, dir[2]*len*0.8,
+          dir[0]*len, dir[1]*len, dir[2]*len, dir[0]*len*0.8, dir[1]*len*0.8-0.1, dir[2]*len*0.8
         ]);
+        color = [0, 1, 1, 1]; // голубой
         break;
-        case 'ambient':
-            // фоновой: круг радиуса 0.3
-            const segs = 16;
-            const r    = 0.3;
-            verts = new Float32Array(segs * 2 * 3);
-          
-            for (let i = 0; i < segs; i++) {
-              // расчёт углов без скрытых символов
-              const a1 = (i     / segs) * 2 * Math.PI;
-              const a2 = ((i+1) / segs) * 2 * Math.PI;
-          
-              verts[i*6 + 0] = Math.cos(a1) * r;
-              verts[i*6 + 1] = Math.sin(a1) * r;
-              verts[i*6 + 2] = 0;
-              verts[i*6 + 3] = Math.cos(a2) * r;
-              verts[i*6 + 4] = Math.sin(a2) * r;
-              verts[i*6 + 5] = 0;
-            }
-            break;
+  
+      case 'ambient':
+        // Кольцо
+        verts = [];
+        const segments = 16;
+        const r = 0.3;
+        for (let i = 0; i <= segments; i++) {
+          const angle = (i / segments) * 2 * Math.PI;
+          verts.push(Math.cos(angle)*r, Math.sin(angle)*r, 0);
+          if (i > 0) {
+            verts.push(Math.cos(angle)*r, Math.sin(angle)*r, 0);
+          }
+        }
+        color = [1, 0, 1, 1]; // пурпурный
+        break;
+  
       default:
         return;
     }
-
-    // заливаем и рисуем
+  
+    gl.uniform4fv(uColor, color);
+  
+    const posLoc = this._getAttribLocation(shaderProgram);
+    const texCoordLoc = gl.getAttribLocation(shaderProgram, 'aTexCoord');
+    gl.disableVertexAttribArray(texCoordLoc);
+  
     const buf = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, buf);
-    gl.bufferData(gl.ARRAY_BUFFER, verts, gl.STATIC_DRAW);
-    gl.drawArrays(gl.LINES, 0, verts.length/3);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(verts), gl.STATIC_DRAW);
+    gl.vertexAttribPointer(posLoc, 3, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(posLoc);
+  
+    gl.drawArrays(gl.LINES, 0, verts.length / 3);
     gl.deleteBuffer(buf);
   }
+  
 }

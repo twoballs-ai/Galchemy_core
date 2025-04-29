@@ -1,8 +1,8 @@
 // src/GameFacade.js
-import { Core }           from './Core.js';
+import { Core }           from './Core.ts';
 import { GameObject2D }   from './GameObjects/primitives/GameObject2D.js';
 import { primitiveFactory } from './GameObjects/PrimitiveFactory.js';   // ← фабрика
-import { Input }          from './Input.js';
+
 import Entity             from './GameObjects/EntityWrapper.js';
 import { getSize }        from '../utils/getSize.js';
 
@@ -17,7 +17,7 @@ export { primitiveFactory } from './GameObjects/PrimitiveFactory.js';   // ре-
 class GameFacade {
   constructor() {
     this.core  = null;
-    this.input = new Input();
+
 
 
   }
@@ -31,7 +31,7 @@ class GameFacade {
       height: h,
       backgroundColor: bg,
     });
-    this.core.input = this.input;
+
     this.core.game  = this;            // ссылка «обратно»
     return this;
   }
@@ -57,7 +57,7 @@ class GameFacade {
       speed    : opts.speed ?? 200,
     });
     this.core.add(go);
-    return new Entity(go, this.core, this.input);
+    return new Entity(go, this.core );
   }
 
   /* -------- универсальный 3-D примитив ----------------------- */
@@ -66,7 +66,7 @@ class GameFacade {
     const gl = this.core.ctx;
     const go = primitiveFactory.create(type, gl, opts);
     this.core.add(go);
-    return new Entity(go, this.core, this.input);
+    return new Entity(go, this.core);
   }
   spawnCamera(opts = {}) {
     const gl = this.core.ctx;

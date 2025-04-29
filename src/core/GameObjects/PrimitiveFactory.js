@@ -77,6 +77,4 @@ primitiveFactory.register(
   'camera',
   (gl, opts) => new GameObjectCamera(gl, opts)
 );
-primitiveFactory.register('light', (gl, opts) =>
-  new GameObjectLight(gl, opts)
-);
+primitiveFactory.register('light', (gl, opts) => new GameObjectLight(gl, opts));

@@ -1,1 +1,1 @@
-export { default as GameAlchemy } from './core/Game.js';
+export { default as GameAlchemy } from './core/Game.ts';
