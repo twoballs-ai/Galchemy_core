@@ -8,10 +8,10 @@ import { getSize }        from '../utils/getSize.js';
 
 import { loadGLB }        from '../utils/GLTFLoader.js';
 
-import { EditorMode }     from './modes/EditorMode.js';
+import { EditorMode }     from './modes/EditorMode.ts';
 import { PreviewMode }    from './modes/PreviewMode.js';
 
-export { GameObject3D }   from './GameObjects/primitives/GameObject3D.js';
+export { GameObject3D }   from './GameObjects/primitives/GameObject3D.ts';
 export { primitiveFactory } from './GameObjects/PrimitiveFactory.js';   // ре-экспорт
 
 class GameFacade {
@@ -46,28 +46,28 @@ class GameFacade {
 
   /* -------- 2-D спрайт -------------------------------------- */
 
-  spawn(img, x, y, opts = {}) {
-    const { layer = 0 } = opts;
-    const [w, h]        = getSize(opts);
-    const go = new GameObject2D(this.core.ctx, {
-      imageSrc : opts.image || img,
-      x, y, width: w, height: h, layer,
-      physics  : false,
-      collision: true,
-      speed    : opts.speed ?? 200,
-    });
-    this.core.add(go);
-    return new Entity(go, this.core );
-  }
+  // spawn(img, x, y, opts = {}) {
+  //   const { layer = 0 } = opts;
+  //   const [w, h]        = getSize(opts);
+  //   const go = new GameObject2D(this.core.ctx, {
+  //     imageSrc : opts.image || img,
+  //     x, y, width: w, height: h, layer,
+  //     physics  : false,
+  //     collision: true,
+  //     speed    : opts.speed ?? 200,
+  //   });
+  //   this.core.add(go);
+  //   return new Entity(go, this.core );
+  // }
 
   /* -------- универсальный 3-D примитив ----------------------- */
 
-  spawnPrimitive(type, opts = {}) {
-    const gl = this.core.ctx;
-    const go = primitiveFactory.create(type, gl, opts);
-    this.core.add(go);
-    return new Entity(go, this.core);
-  }
+  // spawnPrimitive(type, opts = {}) {
+  //   const gl = this.core.ctx;
+  //   const go = primitiveFactory.create(type, gl, opts);
+  //   this.core.add(go);
+  //   return new Entity(go, this.core);
+  // }
   spawnCamera(opts = {}) {
     const gl = this.core.ctx;
     const camObj = primitiveFactory.create('camera', gl, opts);

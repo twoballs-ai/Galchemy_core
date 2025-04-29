@@ -1,5 +1,5 @@
-import { GameObject3D } from './primitives/GameObject3D.js';
-import { GameCamera } from '../cameras/GameCamera.js';
+import { GameObject3D } from './primitives/GameObject3D.ts';
+import { GameCamera } from '../cameras/GameCamera.ts';
 import { createCameraIconGeometry } from './primitives/3dPrimitives/createCameraIconGeometry.js';
 import { mat4 } from '../../vendor/gl-matrix/index.js';
 

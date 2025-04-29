@@ -1,9 +1,9 @@
 // core/PrimitiveFactory.js
-import { GameObject3D }            from './primitives/GameObject3D.js';
+import { GameObject3D }            from './primitives/GameObject3D.ts';
 import { createSphereGeometry }    from './primitives/3dPrimitives/createSphereGeometry.js';
 import { createCubeGeometry }      from './primitives/3dPrimitives/createCubeGeometry.js';
 import { createCylinderGeometry }  from './primitives/3dPrimitives/createCylinderGeometry.js';
-import { GameObjectCamera } from './GameObjectCamera.js';
+import { GameObjectCamera } from './GameObjectCamera.ts';
 import { GameObjectLight } from './GameObjectLight.js';
 import defaultTextureSrc           from '../../assets/Metal052C_1K-JPG/Metal052C_1K-JPG_Color.jpg';  // добавили!
 
