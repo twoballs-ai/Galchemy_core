@@ -5,11 +5,12 @@ import { drawGrid } from "./helpers/GridHelper.ts";
 import { drawGizmo } from "./helpers/GizmoHelper.js";
 import type { CameraInterface, DragState } from "../../types/RendererTypes.ts";
 import type { Scene } from "../core/Scene.ts";
+import { TransformGizmo } from "./helpers/TransformGizmo.js";
 
 export class WebGLRenderer extends Renderer {
   canvas: HTMLCanvasElement;
   gl: WebGLRenderingContext;
-
+  transformGizmo = new TransformGizmo();
   // Сетка
   gridSize = 10;
   gridStep = 1;
@@ -296,7 +297,7 @@ export class WebGLRenderer extends Renderer {
         o.renderWebGL2D(this.spriteRenderer);
       }
     }
-  
+    this.transformGizmo.draw(this);
     // 8) Выдаём всё на экран
     this.spriteRenderer.flush();
   }
