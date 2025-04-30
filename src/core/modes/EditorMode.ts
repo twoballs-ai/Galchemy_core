@@ -1,11 +1,13 @@
 import { BaseMode } from './BaseMode.js';
 import { EditorCamera } from '../cameras/EditorCamera.ts';
-import { EditorControls } from '../controls/EditorControls.ts'; // подключаем
+import { EditorControls } from '../controls/EditorControls.ts';
+// import { SelectionOutline2D } from '../Renderer/helpers/SelectionOutline2D.js'; // 🔧 путь и имя
 import type { Core } from '../../types/CoreTypes';
 
 export class EditorMode extends BaseMode {
   private core!: Core;
   private controls!: EditorControls;
+  // private selectionOutline!: SelectionOutline2D;
 
   enter(core: Core) {
     super.enter(core);
@@ -19,15 +21,24 @@ export class EditorMode extends BaseMode {
 
     core.scene.objects.forEach(o => { o.isEditorMode = true; });
 
-    // здесь вместо ручных событий:
     this.controls = new EditorControls(core);
+    // this.selectionOutline = new SelectionOutline2D(core.canvas);
   }
 
   exit() {
-    this.controls.dispose(); // снимаем все обработчики
+    this.controls.dispose();
   }
+
   update(dt: number) {
-    // чтобы WebGLRenderer знал, что рисовать outline
     this.core.renderer.selectedObject = this.controls.selectedObject;
+
+    // this.selectionOutline.draw(
+    //   this.core.camera,
+    //   this.controls.selectedObject
+    // );
+  }
+
+  resize(width: number, height: number) {
+    // this.selectionOutline.resize(width, height);
   }
 }

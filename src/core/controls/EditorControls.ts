@@ -123,10 +123,6 @@ export class EditorControls {
       case "s": case "arrowdown":  camera.target[2] += speed; break;
       case "a": case "arrowleft":  camera.target[0] -= speed; break;
       case "d": case "arrowright": camera.target[0] += speed; break;
-      case "p": // 🆕 переключение проекции
-      case "5": // можно и по цифре 5
-        camera.toggleProjectionMode();
-        break;
     }
   };
 

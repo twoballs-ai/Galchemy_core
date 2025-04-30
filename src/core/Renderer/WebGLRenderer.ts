@@ -1,7 +1,7 @@
 import { Renderer } from "./Renderer.js";
 import { mat4, vec3 } from "../../vendor/gl-matrix/index.js";
 import { SpriteRenderer } from "./SpriteRenderer.js";
-import { drawGrid } from "./helpers/GridHelper.js";
+import { drawGrid } from "./helpers/GridHelper.ts";
 import { drawGizmo } from "./helpers/GizmoHelper.js";
 import type { CameraInterface, DragState } from "../../types/RendererTypes.ts";
 import type { Scene } from "../core/Scene.ts";
@@ -182,37 +182,45 @@ export class WebGLRenderer extends Renderer {
 
     this._drawLines(lines, [1, 1, 0, 1]);
   }
-  private _drawSelectionOutline(obj: any) {
+  private _drawMeshOutline(obj: any) {
     const gl = this.gl;
-    const posLoc = this.aPos;
-  
-    const modelMatrix = mat4.create();
-    const [wx, wy, wz] = obj.worldPosition;
-    mat4.translate(modelMatrix, modelMatrix, [wx, wy, wz]);
-    mat4.scale(modelMatrix, modelMatrix, [1.1, 1.1, 1.1]); // Немного увеличить масштаб
-  
-    gl.uniformMatrix4fv(this.uModel, false, modelMatrix);
-  
-    // Чёрный цвет для обводки
-    gl.uniform4fv(this.uColor, [0, 0, 0, 1]);
+
+    // переключаемся на одноцветный рендеринг
     gl.uniform1i(this.uUseTexture, false);
-  
-    // Буферы объекта
+    gl.uniform4fv(this.uColor, [0, 0, 1, 1]); // синий
+
+    // позиции вершин
     gl.bindBuffer(gl.ARRAY_BUFFER, obj.vertexBuffer);
-    gl.vertexAttribPointer(posLoc, 3, gl.FLOAT, false, 0, 0);
-    gl.enableVertexAttribArray(posLoc);
-  
-    if (obj.texCoordBuffer && this.aTexCoord !== -1) {
-      gl.bindBuffer(gl.ARRAY_BUFFER, obj.texCoordBuffer);
-      gl.vertexAttribPointer(this.aTexCoord, 2, gl.FLOAT, false, 0, 0);
-      gl.enableVertexAttribArray(this.aTexCoord);
+    gl.vertexAttribPointer(this.aPos, 3, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(this.aPos);
+    gl.disableVertexAttribArray(this.aTexCoord);
+
+    // если буфер линий ещё не создан — генерируем его один раз
+    if (!obj._lineBuffer) {
+      const tri = obj.mesh.indices as (Uint16Array | Uint32Array);
+      const lines: number[] = [];
+      for (let i = 0; i < tri.length; i += 3) {
+        const a = tri[i], b = tri[i+1], c = tri[i+2];
+        lines.push(a, b, b, c, c, a);
+      }
+      const lineIdx = tri.BYTES_PER_ELEMENT === 2
+        ? new Uint16Array(lines)
+        : new Uint32Array(lines);
+      const buf = gl.createBuffer()!;
+      gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buf);
+      gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, lineIdx, gl.STATIC_DRAW);
+      obj._lineBuffer = buf;
+      obj._lineCount  = lineIdx.length;
+      obj._lineType   = (tri.BYTES_PER_ELEMENT === 2
+        ? gl.UNSIGNED_SHORT
+        : gl.UNSIGNED_INT);
     } else {
-      gl.disableVertexAttribArray(this.aTexCoord);
+      gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, obj._lineBuffer);
     }
-  
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, obj.indexBuffer);
-    gl.drawElements(gl.TRIANGLES, obj.vertexCount, obj.indexType, 0);
+
+    gl.drawElements(gl.LINES, obj._lineCount, obj._lineType, 0);
   }
+
   /** Отрисовка массива линий одного цвета */
   private _drawLines(v: Float32Array, color: [number, number, number, number]): void {
     const gl = this.gl;
@@ -260,12 +268,12 @@ export class WebGLRenderer extends Renderer {
     // 5) Основные 3D-объекты
     for (const o of scene.objects) {
       if (typeof o.renderWebGL3D === "function") {
-        // если это выбранный — сначала обводка
-        if (o === this.selectedObject) {
-          this._drawSelectionOutline(o);
-        }
+
         // затем сам объект
         o.renderWebGL3D(gl, this.shaderProgram, this.uModel, this.uColor, this.uUseTexture);
+        if (o === this.selectedObject) {
+          this._drawMeshOutline(o);
+        }
       }
     }
   
@@ -280,10 +288,6 @@ export class WebGLRenderer extends Renderer {
         }
       }
   
-      // После рисования всего вспомогательного — сбрасываем projection/view
-       this.activeCamera.update();
-       gl.uniformMatrix4fv(this.uView, false, this.activeCamera.getView());
-       gl.uniformMatrix4fv(this.uProj, false, this.activeCamera.getProjection())
     }
   
     // 7) 2D-спрайты
