@@ -41,40 +41,41 @@ export class EditorControls {
   }
 
   private _onMouseDown = (e: MouseEvent) => {
-    const { canvas } = this.core;
-  
-    if (e.button === 0 && !e.shiftKey) {
-      const pick = this._pickObject(e);
-      if (pick) {
-        this.selectedObject = pick.obj;
-        const off: [number, number, number] = [
-          pick.pickPoint[0] - pick.obj.position[0],
-          pick.pickPoint[1] - pick.obj.position[1],
-          pick.pickPoint[2] - pick.obj.position[2]
-        ];
-        this.dragObjectInfo = { obj: pick.obj, offset: off };
-  
-        // 🆕 Эмитим событие!
-        this.core.emitter.emit("objectSelected", {
-          id: pick.obj.id,
-          name: pick.obj.name ?? '',
-          type: pick.obj.type,
-          position: pick.obj.position.slice(),
-        });
-  
-        return;
-      }
-  
-      this.selectedObject = null;
-      this.core.emitter.emit("objectSelected", null); // 🆕 сброс выделения
-      this.dragCameraInfo = { mode: "orbit", x: e.clientX, y: e.clientY };
+  const { canvas } = this.core;
+
+  if (e.button === 0 && !e.shiftKey) {
+    const pick = this._pickObject(e);
+    if (pick) {
+      this.selectedObject = pick.obj;
+      const off: [number, number, number] = [
+        pick.pickPoint[0] - pick.obj.position[0],
+        pick.pickPoint[1] - pick.obj.position[1],
+        pick.pickPoint[2] - pick.obj.position[2]
+      ];
+      this.dragObjectInfo = { obj: pick.obj, offset: off };
+
+      // Эмитим событие выбора объекта
+      this.core.emitter.emit("objectSelected", {
+        id: pick.obj.id,
+        name: pick.obj.name ?? '',
+        type: pick.obj.type,
+        position: pick.obj.position.slice(),
+      });
+
       return;
     }
-  
-    if ((e.button === 0 && e.shiftKey) || e.button === 2) {
-      this.dragCameraInfo = { mode: "pan", x: e.clientX, y: e.clientY };
-    }
-  };
+
+    // Если объект не выбран, сбрасываем выбор
+    this.selectedObject = null;
+    this.core.emitter.emit("objectSelected", null);
+    this.dragCameraInfo = { mode: "orbit", x: e.clientX, y: e.clientY };
+    return;
+  }
+
+  if ((e.button === 0 && e.shiftKey) || e.button === 2) {
+    this.dragCameraInfo = { mode: "pan", x: e.clientX, y: e.clientY };
+  }
+};
 
   private _onMouseMove = (e: MouseEvent) => {
     const camera = this.core.camera as any;

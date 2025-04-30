@@ -1,29 +1,23 @@
 export class Scene {
-  constructor() {
+  constructor(emitter) {
     this.objects = [];
-    this.updateHooks = []; // 👈 добавляем массив хуков
-    this.activeCamera = null; 
+    this.updateHooks = [];
+    this.activeCamera = null;
+    this.selectedObject = null;
+    this.emitter = emitter; // 🔧 получаем emitter извне
   }
 
   add(gameObject) {
-    // console.log('[Scene.add] добавляем в сцену:', {
-    //   id: gameObject.id,
-    //   ctor: gameObject.constructor.name,
-    //   isCamera:!!gameObject.isCamera
-    // });
     this.objects.push(gameObject);
     if (gameObject.isCamera && !this.activeCamera) {
       this.setActiveCamera(gameObject);
-    }
-    this.objects.push(gameObject);
-    if (gameObject.isCamera && !this.activeCamera) {
-      this.setActiveCamera(gameObject);  // первая камера — по умолчанию
     }
   }
 
   addUpdateHook(fn) {
     this.updateHooks.push(fn);
   }
+
   setActiveCamera(cameraObject) {
     if (cameraObject?.isCamera) {
       this.activeCamera = cameraObject;
@@ -32,14 +26,24 @@ export class Scene {
     }
   }
 
- update(deltaTime) {
-   // обновляем только тех, у кого есть update()
-   this.objects.forEach(obj => {
-     if (typeof obj.update === 'function') {
-       obj.update(deltaTime);
-     }
-   });
-   // запускаем все хуки
-   this.updateHooks.forEach(fn => fn(deltaTime));
- }
+  // 🔧 Выделение объекта по ID
+  setSelectedById(id) {
+    const object = this.objects.find(obj => obj.id === id); // Ищем объект по ID
+    if (object) {
+      this.selectedObject = object; // Устанавливаем объект как выбранный
+      this.emitter.emit("objectSelected", { id: object.id }); // Эмитируем событие с ID
+    } else {
+      this.selectedObject = null; // Если объект не найден
+      this.emitter.emit("objectSelected", null); // Эмитируем событие с null
+    }
+  }
+
+  update(deltaTime) {
+    this.objects.forEach(obj => {
+      if (typeof obj.update === 'function') {
+        obj.update(deltaTime);
+      }
+    });
+    this.updateHooks.forEach(fn => fn(deltaTime));
+  }
 }
