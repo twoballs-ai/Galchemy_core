@@ -27,10 +27,11 @@ export class Core {
     this.gc = new GraphicalContext(canvasId, backgroundColor, width, height);
     this.canvas = this.gc.getCanvas();
     this.ctx = this.gc.getContext();
-    this.renderer = this.gc.getRenderer();
 
+    this.renderer = this.gc.getRenderer();
+    this.renderer.setCore(this);  
     this.emitter = new EventEmitter();
-    this.sceneManager = new SceneManager(this.emitter);
+    this.sceneManager = new SceneManager(this, this.emitter);
     this.sceneManager.createScene('main');
 
     this.loop = this.loop.bind(this);
@@ -79,7 +80,10 @@ export class Core {
     this._running = true;
     requestAnimationFrame(this.loop);
   }
-
+  setSelectedObject(obj: SceneObject | null) {
+    this.renderer.selectedObject = obj; // для обводки
+  }
+  
   stop() {
     this._running = false;
   }

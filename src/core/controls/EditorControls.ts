@@ -47,6 +47,8 @@ export class EditorControls {
     const pick = this._pickObject(e);
     if (pick) {
       this.selectedObject = pick.obj;
+       this.core.scene.selectedObject = pick.obj;     // для доступа из Scene
+ this.core.setSelectedObject?.(pick.obj);  
       const off: [number, number, number] = [
         pick.pickPoint[0] - pick.obj.position[0],
         pick.pickPoint[1] - pick.obj.position[1],
@@ -66,7 +68,9 @@ export class EditorControls {
     }
 
     // Если объект не выбран, сбрасываем выбор
-    this.selectedObject = null;
+    this.selectedObject           = null; 
+    this.core.scene.selectedObject = null; 
+    this.core.setSelectedObject?.(null);
     this.core.emitter.emit("objectSelected", null);
     this.dragCameraInfo = { mode: "orbit", x: e.clientX, y: e.clientY };
     return;

@@ -2,21 +2,20 @@
 import { Scene } from './Scene.ts';     // ваша реализация сцены
 
 export class SceneManager {
-  constructor(emitter) {
+  constructor(core, emitter) {
+    this.core = core;
     this.emitter = emitter;            // EventEmitter из Core
     this.scenes  = new Map();          // Map<string, Scene>
     this.current = null;               // текущая сцена
   }
 
   /* ---------- создание / переключение ---------- */
-
   createScene(name) {
-    const scene = new Scene(name);
+    const scene = new Scene(this.core, this.emitter); // ✅ теперь передаём core
     this.scenes.set(name, scene);
-    if (!this.current) this.switchScene(name);   // первая созданная = активная
+    if (!this.current) this.switchScene(name);
     return scene;
   }
-
 
   changeScene(name) { this.switchScene(name); }  // псевдоним для удобства
   getCurrentScene()  { return this.current; }

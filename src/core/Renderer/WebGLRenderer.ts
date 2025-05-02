@@ -43,6 +43,12 @@ export class WebGLRenderer extends Renderer {
       this.canvas.height
     );
   }
+  public core: Core | null = null; // Добавляем core
+
+  // Метод для установки core в рендерер
+  setCore(core: Core) {
+    this.core = core;
+  }
 
   /** Настройка базового состояния WebGL */
   private _initWebGL(bg: string | [number, number, number]): void {
@@ -251,54 +257,54 @@ export class WebGLRenderer extends Renderer {
   }
   render(scene: Scene, helpers = false): void {
     const gl = this.gl;
-  
+
     // 1) Сначала чистим буферы
     this.clear();
-  
+
     // 2) Подготавливаем шейдер
     gl.useProgram(this.shaderProgram);
     gl.disableVertexAttribArray(this.aTexCoord);
-  
-
 
     this.activeCamera.update(); // обновит view внутри
     gl.uniformMatrix4fv(this.uView, false, this.activeCamera.getView());
     gl.uniformMatrix4fv(this.uProj, false, this.activeCamera.getProjection());
-    // 4) Проекция уже была залита в _setupProjection(), она остается в шейдере
-  
-    // 5) Основные 3D-объекты
+    
+    // 3) Проекция уже была залита в _setupProjection(), она остается в шейдере
+
+    // 4) Основные 3D-объекты
     for (const o of scene.objects) {
       if (typeof o.renderWebGL3D === "function") {
-
-        // затем сам объект
+        // Отрисовываем сам объект
         o.renderWebGL3D(gl, this.shaderProgram, this.uModel, this.uColor, this.uUseTexture);
-        if (o === this.selectedObject) {
-          this._drawMeshOutline(o);
+        
+        // Проверяем, если объект выбран
+        if (o === this.core?.scene.selectedObject) {
+          this._drawMeshOutline(o);  // Рисуем контур выбранного объекта
         }
       }
     }
-  
-    // 6) Helpers (grid, gizmo, camera-frustum)
+
+    // 5) Помощники (сетка, гизмо, фрустум камеры)
     if (helpers) {
       drawGrid(this);
       drawGizmo(this);
-  
+
       for (const o of scene.objects) {
         if ((o as any).isCamera) {
           this._drawCameraFrustum(o);
         }
       }
-  
     }
-  
-    // 7) 2D-спрайты
+
+    // 6) 2D-спрайты
     for (const o of scene.objects) {
       if (typeof o.renderWebGL2D === "function") {
         o.renderWebGL2D(this.spriteRenderer);
       }
     }
+
     this.transformGizmo.draw(this);
-    // 8) Выдаём всё на экран
+    // 7) Выводим всё на экран
     this.spriteRenderer.flush();
   }
   

@@ -1,10 +1,12 @@
 export class Scene {
-  constructor(emitter) {
+  constructor(core, emitter) {
     this.objects = [];
     this.updateHooks = [];
     this.activeCamera = null;
     this.selectedObject = null;
     this.emitter = emitter; // 🔧 получаем emitter извне
+    this.core = core;
+
   }
 
   add(gameObject) {
@@ -28,16 +30,15 @@ export class Scene {
 
   // 🔧 Выделение объекта по ID
   setSelectedById(id) {
-    const object = this.objects.find(obj => obj.id === id); // Ищем объект по ID
-    if (object) {
-      this.selectedObject = object; // Устанавливаем объект как выбранный
-      this.emitter.emit("objectSelected", { id: object.id }); // Эмитируем событие с ID
-    } else {
-      this.selectedObject = null; // Если объект не найден
-      this.emitter.emit("objectSelected", null); // Эмитируем событие с null
-    }
+    const object = this.objects.find(obj => obj.id === id) ?? null;
+    this.selectedObject = object;
+  
+    // Обновляем в ядре
+    this.core?.setSelectedObject?.(object);
+  
+    // Эмитим событие для остальных слушателей (например, панели объектов)
+    this.emitter?.emit?.("objectSelected", object ? { id: object.id } : null);
   }
-
   update(deltaTime) {
     this.objects.forEach(obj => {
       if (typeof obj.update === 'function') {
