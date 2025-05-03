@@ -10,6 +10,7 @@ import { loadGLB }        from '../utils/GLTFLoader.js';
 
 import { EditorMode }     from './modes/EditorMode.ts';
 import { PreviewMode }    from './modes/PreviewMode.js';
+import { patchObject, updateGeometry } from './helpers/objectUpdater.js';
 
 export { GameObject3D }   from './GameObjects/primitives/GameObject3D.ts';
 export { primitiveFactory } from './GameObjects/PrimitiveFactory.js';   // ре-экспорт
@@ -43,7 +44,14 @@ class GameFacade {
     this.core.enablePhysics({ gravity });
     return this;
   }
+  patchObject(id: string, props: any) {
+    patchObject(this.core, id, props);
+  }
 
+  /** Обновление геометрии + патч остальных свойств */
+  updateObject(id: string, type: string, props: any) {
+    updateGeometry(this.core, id, type, props);
+  }
   /* -------- 2-D спрайт -------------------------------------- */
 
   // spawn(img, x, y, opts = {}) {
