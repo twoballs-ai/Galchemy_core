@@ -1,19 +1,38 @@
-export function createCubeGeometry(size = 1) {
-  const s = size / 2;
+export function createCubeGeometry(width = 1, height = 1, depth = 1) {
+  const hw = width / 2;
+  const hh = height / 2;
+  const hd = depth / 2;
+
   const positions = [
     // front
-    -s, -s,  s,  s, -s,  s,  s,  s,  s, -s,  s,  s,
+    -hw, -hh,  hd,  hw, -hh,  hd,  hw,  hh,  hd, -hw,  hh,  hd,
     // back
-    -s, -s, -s, -s,  s, -s,  s,  s, -s,  s, -s, -s,
+    -hw, -hh, -hd, -hw,  hh, -hd,  hw,  hh, -hd,  hw, -hh, -hd,
     // top
-    -s,  s, -s, -s,  s,  s,  s,  s,  s,  s,  s, -s,
+    -hw,  hh, -hd, -hw,  hh,  hd,  hw,  hh,  hd,  hw,  hh, -hd,
     // bottom
-    -s, -s, -s,  s, -s, -s,  s, -s,  s, -s, -s,  s,
+    -hw, -hh, -hd,  hw, -hh, -hd,  hw, -hh,  hd, -hw, -hh,  hd,
     // right
-     s, -s, -s,  s,  s, -s,  s,  s,  s,  s, -s,  s,
+     hw, -hh, -hd,  hw,  hh, -hd,  hw,  hh,  hd,  hw, -hh,  hd,
     // left
-    -s, -s, -s, -s, -s,  s, -s,  s,  s, -s,  s, -s,
+    -hw, -hh, -hd, -hw, -hh,  hd, -hw,  hh,  hd, -hw,  hh, -hd,
   ];
+
+  const normals = [
+    // front
+     0,  0,  1,  0,  0,  1,  0,  0,  1,  0,  0,  1,
+    // back
+     0,  0, -1,  0,  0, -1,  0,  0, -1,  0,  0, -1,
+    // top
+     0,  1,  0,  0,  1,  0,  0,  1,  0,  0,  1,  0,
+    // bottom
+     0, -1,  0,  0, -1,  0,  0, -1,  0,  0, -1,  0,
+    // right
+     1,  0,  0,  1,  0,  0,  1,  0,  0,  1,  0,  0,
+    // left
+    -1,  0,  0, -1,  0,  0, -1,  0,  0, -1,  0,  0,
+  ];
+
   const texCoords = [
     // front
     0,0, 1,0, 1,1, 0,1,
@@ -28,13 +47,16 @@ export function createCubeGeometry(size = 1) {
     // left
     0,0, 1,0, 1,1, 0,1,
   ];
+
   const indices = [];
   for (let f = 0; f < 6; ++f) {
     const o = f * 4;
-    indices.push(o, o+1, o+2,  o, o+2, o+3);
+    indices.push(o, o + 1, o + 2, o, o + 2, o + 3);
   }
+
   return {
     positions: new Float32Array(positions),
+    normals: new Float32Array(normals),
     indices: new Uint16Array(indices),
     texCoords: new Float32Array(texCoords),
   };
