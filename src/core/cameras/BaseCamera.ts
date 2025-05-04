@@ -1,4 +1,5 @@
 import { mat4 } from '../../vendor/gl-matrix/index.js';
+import { UP } from '../../constants/CoordSystem.ts';  // добавим импорт
 
 export class BaseCamera {
   constructor(w, h) {
@@ -8,7 +9,7 @@ export class BaseCamera {
     this.view = mat4.create();
     this.position = [0, 0, 10];
     this.lookAt = [0, 0, 0];
-    this.up = [0, 1, 0];
+    this.up = UP;  // теперь это [0, 0, 1]
   }
 
   update() {
@@ -22,7 +23,9 @@ export class BaseCamera {
   }
 
   getProjection() { return this.projection; }
-  getView() { return this.view; }
+  getView()       { return this.view; }
 
-  updateProjection() { /* переопределяется в подклассах */ }
+  updateProjection() {
+    // может быть переопределён в подклассах
+  }
 }

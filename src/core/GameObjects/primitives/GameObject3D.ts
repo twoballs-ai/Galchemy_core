@@ -1,5 +1,5 @@
 // src/core/GameObjects/GameObject3D.js
-import { mat4 }     from '../../../vendor/gl-matrix/index.js';
+import { mat4, mat3 } from '../../../vendor/gl-matrix/index.js';
 import { hexToRGB } from '../../../utils/ColorMixin.js';
 
 export class GameObject3D {
@@ -23,11 +23,13 @@ export class GameObject3D {
    *   textureSrc?: string
    * }} opts
    */
-  constructor(gl, { mesh, position = [0,0,0], color='#ffffff', textureSrc=null }) {
+  constructor(gl, { mesh, position = [0,0,0], color='#ffffff', textureSrc=null,  roughness = 0.8,  
+    metalness = 0.0 }) {
     this.gl       = gl;
     this.mesh     = mesh;                          // сохраним меш для raycast’а
     this.position = position.slice();
-
+    this.roughness = roughness;
+    this.metalness = metalness;
     // цвет → vec4
     this.color = Array.isArray(color)
       ? (color.length===3 ? [...color,1] : color.slice(0,4))
@@ -59,6 +61,7 @@ export class GameObject3D {
     this.indexBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.indexBuffer);
     gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, mesh.indices, gl.STATIC_DRAW);
+    
 
     this.vertexCount = mesh.indices.length;
     this.indexType   = mesh.indices.BYTES_PER_ELEMENT===2
@@ -72,7 +75,13 @@ export class GameObject3D {
     } else {
       this.texCoordBuffer = null;
     }
-
+    if (mesh.normals) {
+      this.normalBuffer = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, this.normalBuffer);
+      gl.bufferData(gl.ARRAY_BUFFER, mesh.normals, gl.STATIC_DRAW);
+    } else {
+      this.normalBuffer = null;
+    }
     // cache атрибутов
     this.aPosLocMap = new WeakMap();
   }
@@ -124,39 +133,57 @@ export class GameObject3D {
   /**
    * Вызывается из WebGLRenderer.render
    */
-  renderWebGL3D(gl, shaderProgram, uModel, uColor, uUseTexture) {
-    const posLoc = this._getAttribLocation(shaderProgram);
+    /* uAmbientColor = vec3, uNormalMatrix = mat3 */
+    renderWebGL3D(gl, shaderProgram,
+                  uModel, uAmbientColor, uUseTexture, uNormalMatrix) {
+                    const posLoc = this._getAttribLocation(shaderProgram);
 
-    // modelMatrix
-    const model = mat4.create();
-    const [wx,wy,wz] = this.worldPosition;
-    mat4.translate(model, model, [wx,wy,wz]);
-    gl.uniformMatrix4fv(uModel, false, model);
-
-    // цвет/текстура
-    if (this.texture && this.textureLoaded) {
-      gl.activeTexture(gl.TEXTURE0);
-      gl.bindTexture(gl.TEXTURE_2D, this.texture);
-      gl.uniform1i(uUseTexture, true);
-    } else {
-      gl.uniform4fv(uColor, this.color);
-      gl.uniform1i(uUseTexture, false);
-    }
-
+                    // ===== модель‑матрица и normal‑matrix =====
+                    const model = mat4.create();
+                    mat4.translate(model, model, this.worldPosition);
+                    gl.uniformMatrix4fv(uModel, false, model);
+                  
+                    const nrm = mat3.create();
+                    mat3.normalFromMat4(nrm, model);
+                    gl.uniformMatrix3fv(uNormalMatrix, false, nrm);
+                  
+                    // ===== цвет или текстура =====
+                    if (this.texture && this.textureLoaded) {
+                      gl.activeTexture(gl.TEXTURE0);
+                      gl.bindTexture(gl.TEXTURE_2D, this.texture);
+                      gl.uniform1i(uUseTexture, true);
+                    } else {
+                      gl.uniform3fv(uAmbientColor, this.color.slice(0, 3));
+                      gl.uniform1i(uUseTexture, false);
+                    }
     // позиции
     gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffer);
     gl.vertexAttribPointer(posLoc, 3, gl.FLOAT, false, 0, 0);
     gl.enableVertexAttribArray(posLoc);
 
-    // texCoords
-    const texLoc = gl.getAttribLocation(shaderProgram, "aTexCoord");
-    if (this.texCoordBuffer && texLoc !== -1) {
-      gl.bindBuffer(gl.ARRAY_BUFFER, this.texCoordBuffer);
-      gl.vertexAttribPointer(texLoc, 2, gl.FLOAT, false, 0, 0);
-      gl.enableVertexAttribArray(texLoc);
-    } else {
-      gl.disableVertexAttribArray(texLoc);
-    }
+// texCoords
+const texLoc = gl.getAttribLocation(shaderProgram, "aTexCoord");
+if (this.texCoordBuffer && texLoc !== -1) {
+  gl.bindBuffer(gl.ARRAY_BUFFER, this.texCoordBuffer);
+  gl.vertexAttribPointer(texLoc, 2, gl.FLOAT, false, 0, 0);
+  gl.enableVertexAttribArray(texLoc);
+} else if (texLoc >= 0) {
+  gl.disableVertexAttribArray(texLoc);
+}
+
+// normals
+const normLoc = gl.getAttribLocation(shaderProgram, 'aVertexNormal');
+if (this.normalBuffer && normLoc !== -1) {
+  gl.bindBuffer(gl.ARRAY_BUFFER, this.normalBuffer);
+  gl.vertexAttribPointer(normLoc, 3, gl.FLOAT, false, 0, 0);
+  gl.enableVertexAttribArray(normLoc);
+} else if (normLoc >= 0) {
+  gl.disableVertexAttribArray(normLoc);
+}
+        // 2) normalMatrix  (нужно для блика / света)
+    const normalMatrix = mat3.create();
+    mat3.normalFromMat4(normalMatrix, model);
+    gl.uniformMatrix3fv(uNormalMatrix, false, normalMatrix);
 
     // индексы
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.indexBuffer);

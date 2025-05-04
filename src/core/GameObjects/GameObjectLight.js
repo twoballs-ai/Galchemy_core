@@ -15,6 +15,7 @@ export class GameObjectLight extends GameObject3D {
     position   = [0,0,0],
     direction  = [0,0,0],
     color      = '#ffff00',
+    intensity  = 1.0,
   } = {}) {
     // создаём пустой mesh — рисовать будем динамически
     super(gl, {
@@ -25,8 +26,11 @@ export class GameObjectLight extends GameObject3D {
     this.subtype   = subtype;
     this.direction = direction;
     this.isLight   = true;
+    this.intensity = intensity;
   }
-
+  get worldPosition(){
+    return this.position;          // для point‑lamp
+  }
   renderWebGL3D(gl, shaderProgram, uModel, uColor, uUseTexture) {
     // рисуем только в режиме редактора
     if (!this.isEditorMode) return;
@@ -92,7 +96,10 @@ export class GameObjectLight extends GameObject3D {
   
     const posLoc = this._getAttribLocation(shaderProgram);
     const texCoordLoc = gl.getAttribLocation(shaderProgram, 'aTexCoord');
-    gl.disableVertexAttribArray(texCoordLoc);
+
+if (texCoordLoc >= 0) {
+  gl.disableVertexAttribArray(texCoordLoc);
+}
   
     const buf = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, buf);

@@ -1,38 +1,30 @@
 import { mat4 } from '../../../vendor/gl-matrix/index.js';
+import { drawLines } from '../internal/drawLines.js';
+import { AXIS_X_COLOR, AXIS_Y_COLOR, AXIS_Z_COLOR } from '../../../constants/CoordSystem.js';
 
-/**
- * Рисует бесконечную сетку в плоскости XZ и оси X/Z с выделением центральных линий.
- */
 export function drawGrid(ctx) {
-  const { gl, uModel, gridStep } = ctx;
+  const { gl, gridStep } = ctx;
   const cam = ctx.activeCamera;
   if (!cam) return;
 
-  // const size = Math.ceil(cam.distance * 2 / gridStep) * gridStep;
   const size = 500;
-  const y = 0;
+  const z = 0; // Плоскость XY, Z-вверх
 
   const gridLines: number[] = [];
   const xAxis: number[] = [];
-  const zAxis: number[] = [];
+  const yAxis: number[] = [];
 
   for (let i = -size; i <= size; i += gridStep) {
-    // Горизонтальные линии (параллельны оси X)
     if (i === 0) {
-      zAxis.push(-size, y, 0, size, y, 0); // ось Z (вдоль X)
-      xAxis.push(0, y, -size, 0, y, size); // ось X (вдоль Z)
+      xAxis.push(-size, 0, z, size, 0, z); // X
+      yAxis.push(0, -size, z, 0, size, z); // Y
     } else {
-      gridLines.push(-size, y, i, size, y, i); // параллель Z
-      gridLines.push(i, y, -size, i, y, size); // параллель X
+      gridLines.push(-size, i, z, size, i, z); // параллель X
+      gridLines.push(i, -size, z, i, size, z); // параллель Y
     }
   }
 
-  gl.uniformMatrix4fv(uModel, false, mat4.create());
-
-  // Сначала рисуем обычную серую сетку
-  ctx._drawLines(new Float32Array(gridLines), [0.45, 0.45, 0.45, 1]);
-
-  // Затем выделенные оси
-  ctx._drawLines(new Float32Array(xAxis), [1, 0, 0, 1]);   // X – красная
-  ctx._drawLines(new Float32Array(zAxis), [0, 0, 1, 1]);   // Z – синяя
+  drawLines(gl, -1, null!, new Float32Array(gridLines), [0.4, 0.4, 0.4, 1], ctx);
+  drawLines(gl, -1, null!, new Float32Array(xAxis),     AXIS_X_COLOR, ctx); // X — красный
+  drawLines(gl, -1, null!, new Float32Array(yAxis),     AXIS_Y_COLOR, ctx); // Y — зелёный
 }
