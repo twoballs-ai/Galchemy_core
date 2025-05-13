@@ -23,7 +23,7 @@ export class GameObject3D {
    *   textureSrc?: string
    * }} opts
    */
-  constructor(gl, { mesh, position = [0,0,0], color='#ffffff', textureSrc=null,  roughness = 0.8,  
+  constructor(gl, { mesh = null,  position = [0,0,0], color='#ffffff', textureSrc=null,  roughness = 0.8,  
     metalness = 0.0 }) {
     this.gl       = gl;
     this.mesh     = mesh;                          // сохраним меш для raycast’а

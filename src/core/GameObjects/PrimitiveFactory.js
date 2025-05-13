@@ -3,10 +3,11 @@ import { GameObject3D }            from './primitives/GameObject3D.ts';
 import { createSphereGeometry }    from './primitives/3dPrimitives/createSphereGeometry.js';
 import { createCubeGeometry }      from './primitives/3dPrimitives/createCubeGeometry.js';
 import { createCylinderGeometry }  from './primitives/3dPrimitives/createCylinderGeometry.js';
+import { createTerrainGeometry } from './primitives/3dPrimitives/createTerrainGeometry.js'
 import { GameObjectCamera } from './GameObjectCamera.ts';
 import { GameObjectLight } from './GameObjectLight.js';
 import defaultTextureSrc           from '../../assets/Metal052C_1K-JPG/Metal052C_1K-JPG_Color.jpg';  // добавили!
-
+import { GameObjectCharacter } from './GameObjectCharacter.ts';
 const DEFAULT_PRIMITIVE_COLOR = '#7f7f7f'; // матово-серый
 
 class PrimitiveFactory {
@@ -77,4 +78,38 @@ primitiveFactory.register(
   'camera',
   (gl, opts) => new GameObjectCamera(gl, opts)
 );
+primitiveFactory.register(
+  'terrain',
+  (gl, {
+    width = 10,
+    depth = 10,
+    seg = 64,
+    position = [0, 0, 0],
+    color,
+    texture,
+    heightFn = (x, z) => 0,
+  }) =>
+    new GameObject3D(gl, {
+      mesh: createTerrainGeometry({ width, depth, seg, heightFn }),
+      position,
+      color,
+      textureSrc: texture,
+    })
+);
 primitiveFactory.register('light', (gl, opts) => new GameObjectLight(gl, opts));
+
+primitiveFactory.register(
+  'character',
+  (gl, {
+    position = [0, 0, 0],
+    color,
+    texture,
+    name = 'Character',
+  }) =>
+    new GameObjectCharacter(gl, {
+      position,
+      color,
+      textureSrc: texture,
+      name,
+    })
+);

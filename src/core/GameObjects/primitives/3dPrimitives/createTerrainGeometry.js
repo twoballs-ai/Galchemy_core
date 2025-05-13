@@ -1,34 +1,72 @@
-// src/core/GameObjects/primitives/3dPrimitives/createTerrainGeometry.js
-import { createPlaneGeometry } from './createPlaneGeometry.js';
-
 export function createTerrainGeometry({
-  width = 10, depth = 10, seg = 64, heightFn = (_) => 0
+  width = 10,
+  depth = 10,
+  seg = 64,
+  heightFn = (_) => 0,
 } = {}) {
-  // 1. создаём сетку
-  const g = createPlaneGeometry({ width, depth, widthSeg: seg, depthSeg: seg });
+  const positions = [];
+  const normals = [];
+  const texCoords = [];
+  const indices = [];
 
-  // 2. поднимаем по heightFn(x,z)
-  const v = g.vertices;
-  for (let i = 0; i < v.length; i += 3) {
-    const x = v[i], z = v[i+2];
-    v[i+1] = heightFn(x,z);
+  const cols = seg + 1;
+  const rows = seg + 1;
+
+  for (let y = 0; y < rows; y++) {
+    const ty = y / seg;
+    const py = ty * depth - depth / 2;
+    for (let x = 0; x < cols; x++) {
+      const tx = x / seg;
+      const px = tx * width - width / 2;
+      const pz = heightFn(px, py); // теперь pz — высота (Z‑up)
+      positions.push(px, py, pz); // X, Y, Z
+      texCoords.push(tx, 1 - ty);
+      normals.push(0, 0, 1); // временно вверх по Z
+    }
   }
 
-  // 3. пересчитываем нормали (центр. разности)
-  const cols = seg + 1;
-  for (let z=0; z<=seg; z++)
-    for (let x=0; x<=seg; x++) {
-      const i = (z*cols + x)*3;
-      const iL = ((z   )*cols + Math.max(x-1,0))*3,
-            iR = ((z   )*cols + Math.min(x+1,seg))*3,
-            iD = (Math.max(z-1,0)*cols + x)*3,
-            iU = (Math.min(z+1,seg)*cols + x)*3;
-      const dx = v[iR+1] - v[iL+1],
-            dz = v[iU+1] - v[iD+1];
-      // нормаль ~ (-dx,1,-dz)
-      const nx = -dx, ny = 2, nz = -dz,
-            l = Math.hypot(nx,ny,nz);
-      g.normals.set([nx/l, ny/l, nz/l], i);
+  for (let y = 0; y < seg; y++) {
+    for (let x = 0; x < seg; x++) {
+      const i = y * cols + x;
+      indices.push(i, i + 1, i + cols);
+      indices.push(i + 1, i + cols + 1, i + cols);
     }
-  return g;
+  }
+
+  // Пересчёт нормалей
+  for (let y = 0; y < rows; y++) {
+    for (let x = 0; x < cols; x++) {
+      const i = (y * cols + x) * 3;
+
+      const getZ = (xi, yi) => {
+        xi = Math.max(0, Math.min(cols - 1, xi));
+        yi = Math.max(0, Math.min(rows - 1, yi));
+        return positions[(yi * cols + xi) * 3 + 2];
+      };
+
+      const zL = getZ(x - 1, y);
+      const zR = getZ(x + 1, y);
+      const zD = getZ(x, y - 1);
+      const zU = getZ(x, y + 1);
+
+      const dx = zR - zL;
+      const dy = zU - zD;
+
+      const nx = -dx;
+      const ny = -dy;
+      const nz = 2;
+      const len = Math.hypot(nx, ny, nz);
+
+      normals[i + 0] = nx / len;
+      normals[i + 1] = ny / len;
+      normals[i + 2] = nz / len;
+    }
+  }
+
+  return {
+    positions: new Float32Array(positions),
+    normals: new Float32Array(normals),
+    indices: new Uint16Array(indices),
+    texCoords: new Float32Array(texCoords),
+  };
 }
