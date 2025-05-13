@@ -15,7 +15,7 @@ import { AXIS_X_COLOR, AXIS_Y_COLOR, AXIS_Z_COLOR } from "../../constants/CoordS
 import { drawGizmoScreen } from "./helpers/GizmoScreen.js";
 export class WebGLRenderer extends Renderer {
   canvas: HTMLCanvasElement;
-  gl: WebGLRenderingContext;
+  gl: WebGL2RenderingContext;
   transformGizmo = new TransformGizmo();
   // Сетка
   gridSize = 10;
@@ -53,7 +53,7 @@ export class WebGLRenderer extends Renderer {
   constructor(graphicalContext: any, backgroundColor: string | [number, number, number]) {
     super(graphicalContext.getContext(), backgroundColor);
     this.canvas = graphicalContext.getCanvas();
-    this.gl = graphicalContext.getContext();
+    this.gl = graphicalContext.getContext() as WebGL2RenderingContext;
 
     this._initWebGL(backgroundColor);
     this._initShaders();

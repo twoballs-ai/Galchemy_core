@@ -8,7 +8,7 @@ import { CoreOptions, IMode, ICamera, IGameObject } from '../types/CoreTypes';
 export class Core {
   private gc: GraphicalContext;
   public canvas: HTMLCanvasElement;
-  public ctx: WebGLRenderingContext | CanvasRenderingContext2D;
+  public ctx: WebGL2RenderingContext | CanvasRenderingContext2D;
   public renderer: any;
 
   public emitter: EventEmitter;

@@ -1,5 +1,5 @@
 // src/core/GraphicalContext.js
-import { WebGLRenderer } from './Renderer/WebGLRenderer.ts';
+import { WebGLRenderer } from './Renderer/WebGLRenderer.js';
 import { ColorMixin }    from '../utils/ColorMixin.js';
 
 export class GraphicalContext {
@@ -10,15 +10,9 @@ export class GraphicalContext {
     this.canvas.width  = width;
     this.canvas.height = height;
 
-    /* Только WebGL (с приоритетом WebGL2) */
-    this.ctx =
-      this.canvas.getContext('webgl2') ||
-      this.canvas.getContext('webgl')  ||
-      this.canvas.getContext('experimental-webgl');
-
-    if (!this.ctx) throw new Error('WebGL is not supported in this browser');
-
-    /* Цвет очистки */
+  this.ctx = this.canvas.getContext('webgl2') as WebGL2RenderingContext;
+  if (!this.ctx) throw new Error('WebGL2 is not supported in this browser');
+      /* Цвет очистки */
     const clearColor = ColorMixin(background);
     this.renderer    = new WebGLRenderer(this, clearColor);
   }
