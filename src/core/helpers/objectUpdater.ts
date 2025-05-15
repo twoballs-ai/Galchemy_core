@@ -1,6 +1,6 @@
-import { createSphereGeometry }   from '../GameObjects/primitives/3dPrimitives/createSphereGeometry.js';
-import { createCubeGeometry }     from '../GameObjects/primitives/3dPrimitives/createCubeGeometry.js';
-import { createCylinderGeometry } from '../GameObjects/primitives/3dPrimitives/createCylinderGeometry.js';
+import { createSphereGeometry }   from '../../GameObjects/primitives/3dPrimitives/createSphereGeometry.js';
+import { createCubeGeometry }     from '../../GameObjects/primitives/3dPrimitives/createCubeGeometry.js';
+import { createCylinderGeometry } from '../../GameObjects/primitives/3dPrimitives/createCylinderGeometry.js';
 import type { Core }              from '../Core.ts';
 
 /**

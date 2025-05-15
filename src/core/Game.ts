@@ -1,9 +1,9 @@
 // src/GameFacade.js
 import { Core }           from './Core.ts';
-import { GameObject2D }   from './GameObjects/primitives/GameObject2D.js';
-import { primitiveFactory } from './GameObjects/PrimitiveFactory.js';   // ← фабрика
+import { GameObject2D }   from '../GameObjects/primitives/GameObject2D.js';
+import { primitiveFactory } from '../GameObjects/PrimitiveFactory.js';   // ← фабрика
 
-import Entity             from './GameObjects/EntityWrapper.js';
+import Entity             from '../GameObjects/EntityWrapper.js';
 import { getSize }        from '../utils/getSize.js';
 
 import { loadGLB }        from '../utils/GLTFLoader.js';
@@ -12,8 +12,8 @@ import { EditorMode }     from './modes/EditorMode.ts';
 import { PreviewMode }    from './modes/PreviewMode.js';
 import { patchObject, updateGeometry } from './helpers/objectUpdater.js';
 
-export { GameObject3D }   from './GameObjects/primitives/GameObject3D.ts';
-export { primitiveFactory } from './GameObjects/PrimitiveFactory.js';   // ре-экспорт
+export { GameObject3D }   from '../GameObjects/primitives/GameObject3D.js';
+export { primitiveFactory } from '../GameObjects/PrimitiveFactory.js';   // ре-экспорт
 
 class GameFacade {
   constructor() {

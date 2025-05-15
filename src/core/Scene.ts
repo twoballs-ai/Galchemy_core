@@ -1,50 +1,60 @@
-export class Scene {
-  constructor(core, emitter) {
+import { IGameObject, IScene, ICamera } from '../types/CoreTypes';
+import { EventEmitter } from '../utils/EventEmitter';
+import { Core } from './Core';
+
+export class Scene implements IScene {
+  public name: string;
+  public objects: IGameObject[] = [];
+  public activeCamera: ICamera | null = null;
+  public selectedObject: IGameObject | null = null;
+  private emitter: EventEmitter;
+  private core: Core;
+
+  constructor(name: string, core: Core, emitter: EventEmitter) {
+    this.name = name;
+    this.core = core;
+    this.emitter = emitter;
+  }
+
+  add(obj: IGameObject) {
+    this.objects.push(obj);
+    if (obj.isCamera && !this.activeCamera) {
+      this.setActiveCamera(obj as ICamera);
+    }
+    this.emitter.emit('objectAdded', { scene: this.name, object: obj });
+  }
+
+  remove(obj: IGameObject) {
+    this.objects = this.objects.filter(o => o.id !== obj.id);
+    if (this.selectedObject?.id === obj.id) {
+      this.setSelectedById(null);
+    }
+    this.emitter.emit('objectRemoved', { scene: this.name, object: obj });
+  }
+
+  clear() {
     this.objects = [];
-    this.updateHooks = [];
     this.activeCamera = null;
     this.selectedObject = null;
-    this.emitter = emitter; // 🔧 получаем emitter извне
-    this.core = core;
-
+    this.emitter.emit('sceneCleared', { scene: this.name });
   }
 
-  add(gameObject) {
-    this.objects.push(gameObject);
-    if (gameObject.isCamera && !this.activeCamera) {
-      this.setActiveCamera(gameObject);
-    }
+  update(deltaTime: number) {
+    this.objects.forEach(obj => obj.update?.(deltaTime));
   }
 
-  addUpdateHook(fn) {
-    this.updateHooks.push(fn);
-  }
-
-  setActiveCamera(cameraObject) {
-    if (cameraObject?.isCamera) {
-      this.activeCamera = cameraObject;
+  setActiveCamera(camera: ICamera) {
+    if (camera?.isCamera) {
+      this.activeCamera = camera;
+      this.core.setActiveCamera(camera);
     } else {
       console.warn('Попытка установить активной не-камеру');
     }
   }
 
-  // 🔧 Выделение объекта по ID
-  setSelectedById(id) {
-    const object = this.objects.find(obj => obj.id === id) ?? null;
-    this.selectedObject = object;
-  
-    // Обновляем в ядре
-    this.core?.setSelectedObject?.(object);
-  
-    // Эмитим событие для остальных слушателей (например, панели объектов)
-    this.emitter?.emit?.("objectSelected", object ? { id: object.id } : null);
-  }
-  update(deltaTime) {
-    this.objects.forEach(obj => {
-      if (typeof obj.update === 'function') {
-        obj.update(deltaTime);
-      }
-    });
-    this.updateHooks.forEach(fn => fn(deltaTime));
+  setSelectedById(id: string | null) {
+    this.selectedObject = id ? this.objects.find(o => o.id === id) ?? null : null;
+    this.core.setSelectedObject(this.selectedObject);
+    this.emitter.emit('objectSelected', this.selectedObject ? { id: this.selectedObject.id } : null);
   }
 }

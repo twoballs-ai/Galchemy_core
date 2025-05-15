@@ -1,10 +1,10 @@
-import { mat4 } from '../../../vendor/gl-matrix/index.js';
+import { mat4 } from '../../vendor/gl-matrix/index.js';
 import { buildGizmoMatrix } from './GizmoMatrix.js';
 import {
   AXIS_X_COLOR,
   AXIS_Y_COLOR,
   AXIS_Z_COLOR,
-} from '../../../constants/CoordSystem.js';
+} from '../../constants/CoordSystem.js';
 
 /**
  * Рисует HUD‑гизмо (XYZ‑оси) в правом‑нижнем углу экрана.

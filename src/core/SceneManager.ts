@@ -1,66 +1,60 @@
-// src/core/SceneManager.js
-import { Scene } from './Scene.ts';     // ваша реализация сцены
+import { Scene } from './Scene';
+import { IGameObject, IScene } from '../types/CoreTypes';
+import { EventEmitter } from '../utils/EventEmitter';
+import { Core } from './Core';
 
 export class SceneManager {
-  constructor(core, emitter) {
+  public scenes: Map<string, IScene> = new Map();
+  private currentScene: IScene | null = null;
+  private core: Core;
+  private emitter: EventEmitter;
+
+  constructor(core: Core, emitter: EventEmitter) {
     this.core = core;
-    this.emitter = emitter;            // EventEmitter из Core
-    this.scenes  = new Map();          // Map<string, Scene>
-    this.current = null;               // текущая сцена
+    this.emitter = emitter;
   }
 
-  /* ---------- создание / переключение ---------- */
-  createScene(name) {
-    const scene = new Scene(this.core, this.emitter); // ✅ теперь передаём core
+  createScene(name: string): IScene {
+    const scene = new Scene(name, this.core, this.emitter);
     this.scenes.set(name, scene);
-    if (!this.current) this.switchScene(name);
+    if (!this.currentScene) this.switchScene(name);
+    this.emitter.emit('sceneCreated', { scene: name });
     return scene;
   }
 
-  changeScene(name) { this.switchScene(name); }  // псевдоним для удобства
-  getCurrentScene()  { return this.current; }
-
-  /* ---------- операции с объектами ---------- */
-
-  getGameObjectsFromCurrentScene() {
-    return this.current ? this.current.objects : [];
-  }
-
-  switchScene(name) {
-    if (!this.scenes.has(name)) {
+  switchScene(name: string) {
+    const scene = this.scenes.get(name);
+    if (!scene) {
       console.warn(`Scene "${name}" not found`);
       return;
     }
-    this.current = this.scenes.get(name);
-    this.emitter.emit('sceneChanged', { scene: name });
+    this.currentScene = scene;
+    this.emitter.emit('sceneSwitched', { scene: name });
   }
 
-  addGameObjectToScene(sceneName, obj) {
-    const scene = this.scenes.get(sceneName) ?? this.current;
-    if (!scene) return;
-    scene.add(obj);
-    // сразу же нотифицируем редактор, передаём минимальный «сериализуемый» профиль
-    this.emitter.emit('objectAdded', {
-      scene: sceneName,
-      object: {
-        id:      obj.id,
-        type:    obj.type,
-        position: obj.position.slice(),
-        // … любые свойства, которые вам важны
-      }
-    });
+  getCurrentScene(): IScene {
+    if (!this.currentScene) {
+      throw new Error('No active scene');
+    }
+    return this.currentScene;
   }
-  removeGameObjectFromScene(sceneName, obj) {
-    const scene = this.scenes.get(sceneName) ?? this.current;
-    if (!scene) return;
-    scene.remove(obj);
-    this.emitter.emit('objectRemoved', {
-      scene:  sceneName,
-      object: { id: obj.id }
-    });
-  }
-  /* ---------- игровой цикл ---------- */
 
-  update(dt)  { this.current?.update(dt);  }
-  render(ctx) { this.current?.render(ctx); }
+  addGameObjectToScene(sceneName: string, obj: IGameObject) {
+    const scene = this.scenes.get(sceneName) ?? this.currentScene;
+    scene?.add(obj);
+  }
+
+  removeGameObjectFromScene(sceneName: string, obj: IGameObject) {
+    const scene = this.scenes.get(sceneName) ?? this.currentScene;
+    scene?.remove(obj);
+  }
+
+  clearScene(sceneName: string) {
+    this.scenes.get(sceneName)?.clear();
+  }
+
+  update(dt: number) {
+    this.currentScene?.update(dt);
+  }
+  
 }

@@ -1,6 +1,6 @@
-import { vec3 } from '../../../vendor/gl-matrix/index.js';
-import type { CameraInterface } from '../../../types/RendererTypes.js';
-import { AXIS_Z_COLOR } from '../../../constants/CoordSystem';
+import { vec3 } from '../../vendor/gl-matrix/index.js';
+import type { CameraInterface } from '../../types/RendererTypes.js';
+import { AXIS_Z_COLOR } from '../../constants/CoordSystem.js';
 
 export function drawCameraFrustum(
   gl: WebGLRenderingContext,

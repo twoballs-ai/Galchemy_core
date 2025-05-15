@@ -1,11 +1,11 @@
-import { mat4 } from '../../../vendor/gl-matrix/index.js';
-import type { WebGLRenderer } from '../renderers/WebGLRenderer';
+import { mat4 } from '../../vendor/gl-matrix/index.js';
+import type { WebGLRenderer } from '../renderers/WebGLRenderer.js';
 import {
   AXIS_X_COLOR,
   AXIS_Y_COLOR,
   AXIS_Z_COLOR,
   SELECTION_COLOR
-} from '../../../constants/CoordSystem.ts';
+} from '../../constants/CoordSystem.js';
 
 const COLORS = {
   x: AXIS_X_COLOR,

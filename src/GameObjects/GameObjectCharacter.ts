@@ -1,4 +1,4 @@
-import { GameObject3D } from './primitives/GameObject3D.ts';
+import { GameObject3D } from './primitives/GameObject3D.js';
 
 export class GameObjectCharacter extends GameObject3D {
   constructor(gl: WebGL2RenderingContext, opts: any = {}) {

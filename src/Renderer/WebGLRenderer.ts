@@ -1,9 +1,9 @@
 import { Renderer } from "./Renderer.js";
-import { mat3, mat4, vec3 } from "../../vendor/gl-matrix/index.js";
+import { mat3, mat4, vec3 } from "../vendor/gl-matrix/index.js";
 import { SpriteRenderer } from "./SpriteRenderer.js";
 import { drawGrid } from "./helpers/GridHelper.js";
 import { drawGizmo } from "./helpers/GizmoHelper.js";
-import type { CameraInterface, DragState } from "../../types/RendererTypes.js";
+import type { CameraInterface, DragState } from "../types/RendererTypes.js";
 import type { Scene } from "../core/Scene.ts";
 import { TransformGizmo } from "./helpers/TransformGizmo.js";
 import { drawMeshOutline } from "./helpers/MeshOutlineHelper.js";
@@ -11,7 +11,7 @@ import { vertexShaderSrc, fragmentShaderSrc } from "./shaders/DefaultShader.js";
 import { plainVertexShader, plainFragmentShader } from "./shaders/PlainShader.js";
 import { initShadowMap, initDepthProgram, calcLightVP } from "./internal/ShadowUtils.js";
 import { drawCameraFrustum } from './helpers/FrustumHelper.js';
-import { AXIS_X_COLOR, AXIS_Y_COLOR, AXIS_Z_COLOR } from "../../constants/CoordSystem";
+import { AXIS_X_COLOR, AXIS_Y_COLOR, AXIS_Z_COLOR } from "../constants/CoordSystem.js";
 import { drawGizmoScreen } from "./helpers/GizmoScreen.js";
 export class WebGLRenderer extends Renderer {
   canvas: HTMLCanvasElement;

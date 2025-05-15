@@ -1,6 +1,6 @@
-import { GameObject3D } from '../primitives/GameObject3D.ts';
+import { GameObject3D } from '../primitives/GameObject3D.js';
 import { createCharacterIconGeometry } from '../primitives/3dPrimitives/objectIcons/createCharacterIconGeometry.js';
-import { mat4 } from '../../../vendor/gl-matrix/index.js';
+import { mat4 } from '../../vendor/gl-matrix/index.js';
 
 export class EditorCharacterView extends GameObject3D {
   constructor(gl: WebGL2RenderingContext, targetCharacter: GameObject3D) {

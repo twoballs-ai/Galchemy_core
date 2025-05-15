@@ -1,11 +1,11 @@
-import { mat4 } from '../../../vendor/gl-matrix/index.js';
-import type { WebGLRenderer } from '../renderers/WebGLRenderer';
+import { mat4 } from '../../vendor/gl-matrix/index.js';
+import type { WebGLRenderer } from '../renderers/WebGLRenderer.js';
 import { drawLines } from '../internal/drawLines.js';
 import {
   AXIS_X_COLOR,
   AXIS_Y_COLOR,
   AXIS_Z_COLOR,
-} from '../../../constants/CoordSystem.js';
+} from '../../constants/CoordSystem.js';
 import { buildGizmoMatrix } from './GizmoMatrix.js';
 
 /**

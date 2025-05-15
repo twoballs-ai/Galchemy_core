@@ -1,13 +1,13 @@
 // core/PrimitiveFactory.js
-import { GameObject3D }            from './primitives/GameObject3D.ts';
-import { createSphereGeometry }    from './primitives/3dPrimitives/createSphereGeometry.ts';
-import { createCubeGeometry }      from './primitives/3dPrimitives/createCubeGeometry.ts';
-import { createCylinderGeometry }  from './primitives/3dPrimitives/createCylinderGeometry.ts';
-import { createTerrainGeometry } from './primitives/3dPrimitives/createTerrainGeometry.ts'
-import { GameObjectCamera } from './GameObjectCamera.ts';
+import { GameObject3D }            from './primitives/GameObject3D.js';
+import { createSphereGeometry }    from './primitives/3dPrimitives/createSphereGeometry.js';
+import { createCubeGeometry }      from './primitives/3dPrimitives/createCubeGeometry.js';
+import { createCylinderGeometry }  from './primitives/3dPrimitives/createCylinderGeometry.js';
+import { createTerrainGeometry } from './primitives/3dPrimitives/createTerrainGeometry.js'
+import { GameObjectCamera } from './GameObjectCamera.js';
 import { GameObjectLight } from './GameObjectLight.js';
-import defaultTextureSrc           from '../../assets/Metal052C_1K-JPG/Metal052C_1K-JPG_Color.jpg';  // добавили!
-import { GameObjectCharacter } from './GameObjectCharacter.ts';
+import defaultTextureSrc           from '../assets/Metal052C_1K-JPG/Metal052C_1K-JPG_Color.jpg';  // добавили!
+import { GameObjectCharacter } from './GameObjectCharacter.js';
 const DEFAULT_PRIMITIVE_COLOR = '#7f7f7f'; // матово-серый
 
 class PrimitiveFactory {

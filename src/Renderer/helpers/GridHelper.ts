@@ -1,6 +1,6 @@
-import { mat4 } from '../../../vendor/gl-matrix/index.js';
+import { mat4 } from '../../vendor/gl-matrix/index.js';
 import { drawLines } from '../internal/drawLines.js';
-import { AXIS_X_COLOR, AXIS_Y_COLOR, AXIS_Z_COLOR } from '../../../constants/CoordSystem.js';
+import { AXIS_X_COLOR, AXIS_Y_COLOR, AXIS_Z_COLOR } from '../../constants/CoordSystem.js';
 
 export function drawGrid(ctx) {
   const { gl, gridStep } = ctx;

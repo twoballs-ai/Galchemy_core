@@ -11,8 +11,8 @@ export class Core {
   public ctx: WebGL2RenderingContext | CanvasRenderingContext2D;
   public renderer: any;
 
-  public emitter: EventEmitter;
   public sceneManager: SceneManager;
+  public emitter: EventEmitter;
   public physics: Physics | null = null;
   public actionBindings: any[] = [];
 
@@ -69,25 +69,55 @@ export class Core {
     this.mode.enter(this);
   }
 
+  addObjectsToScene(sceneName: string, objs: IGameObject[]) {
+    objs.forEach(obj => this.sceneManager.addGameObjectToScene(sceneName, obj));
+  }
+
+  clearScene(sceneName: string) {
+    this.sceneManager.clearScene(sceneName);
+  }
+
   setActiveCamera(camera: ICamera) {
     this.camera = camera;
-    camera.update();
     this.renderer.setCamera(camera);
   }
 
+  setSelectedObject(obj: IGameObject | null) {
+    this.renderer.selectedObject = obj;
+  }
   start() {
     if (this._running) return;
     this._running = true;
     requestAnimationFrame(this.loop);
   }
-  setSelectedObject(obj: SceneObject | null) {
-    this.renderer.selectedObject = obj; // для обводки
-  }
-  
+
   stop() {
     this._running = false;
   }
+addSceneObjects(sceneName: string, objs: any[], shapeFactory: any) {
+  const createdObjs = objs.map(obj => {
+    const builder = shapeFactory[obj.type];
+    if (!builder) {
+      console.warn('Неизвестный тип объекта:', obj.type);
+      return null;
+    }
+    const go = builder({
+      ...obj,
+      position: [obj.x, obj.y, obj.z],
+    });
+    go.id = obj.id;
+    if (this.showHelpers) go.isEditorMode = true;
 
+    if (go.isCamera) {
+      this.setActiveCamera(go);
+    }
+
+    return go;
+  }).filter(Boolean);
+
+  this.clearScene(sceneName);
+  this.addObjectsToScene(sceneName, createdObjs);
+}
   get scene() {
     return this.sceneManager.getCurrentScene();
   }
