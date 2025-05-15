@@ -1,15 +1,22 @@
-// src/core/GameObjects/GameObjectCharacter.ts
 import { GameObject3D } from './primitives/GameObject3D.ts';
 
 export class GameObjectCharacter extends GameObject3D {
   constructor(gl: WebGL2RenderingContext, opts: any = {}) {
+    // Передаём либо mesh, либо пустой заглушечный объект
+    const mesh = opts.mesh ?? {
+      positions: new Float32Array(),
+      indices: new Uint16Array(),
+    };
+
     super(gl, {
-      mesh: opts.mesh ?? null, // можно передать mesh вручную или позже присвоить
+      mesh,
       position: opts.position ?? [0, 0, 0],
       color: opts.color ?? '#ffffff',
       textureSrc: opts.textureSrc ?? null,
     });
 
+    this.id = opts.id ?? crypto.randomUUID();
+    this.sceneId = opts.sceneId ?? null;
     this.type = 'character';
     this.name = opts.name ?? 'Character';
     this.attachedCamera = null;
@@ -17,9 +24,8 @@ export class GameObjectCharacter extends GameObject3D {
 
   attachCamera(cameraObject) {
     this.attachedCamera = cameraObject;
-    cameraObject.attachTo(this); // обратная связь
+    cameraObject.attachTo(this);
   }
 
-  // В перспективе — движения, действия, навигация
-  // moveForward(), jump(), playAnimation(), etc.
+  // В перспективе: действия, анимации, поведение
 }

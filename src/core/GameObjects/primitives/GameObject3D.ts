@@ -23,37 +23,43 @@ export class GameObject3D {
    *   textureSrc?: string
    * }} opts
    */
-  constructor(gl, { mesh = null,  position = [0,0,0], color='#ffffff', textureSrc=null,  roughness = 0.8,  
-    metalness = 0.0 }) {
-    this.gl       = gl;
-    this.mesh     = mesh;                          // сохраним меш для raycast’а
-    this.position = position.slice();
-    this.roughness = roughness;
-    this.metalness = metalness;
-    // цвет → vec4
-    this.color = Array.isArray(color)
-      ? (color.length===3 ? [...color,1] : color.slice(0,4))
-      : hexToRGB(color);
+constructor(gl, {
+  mesh = null,
+  position = [0, 0, 0],
+  color = '#ffffff',
+  textureSrc = null,
+  roughness = 0.8,
+  metalness = 0.0
+}) {
+  this.gl = gl;
+  this.mesh = mesh;
+  this.position = position.slice();
+  this.roughness = roughness;
+  this.metalness = metalness;
 
-    // текстура
-    this.texture = null;
-    this.textureLoaded = false;
-    if (textureSrc) {
-      this.texture = this._loadTexture(textureSrc);
-    }
+  this.color = Array.isArray(color)
+    ? (color.length === 3 ? [...color, 1] : color.slice(0, 4))
+    : hexToRGB(color);
 
-    // вычисляем радиус bounding-сферы в локальных coords
+  this.texture = null;
+  this.textureLoaded = false;
+  if (textureSrc) {
+    this.texture = this._loadTexture(textureSrc);
+  }
+
+  // ===== 🔐 mesh-safe логика ниже =====
+  const hasValidMesh = mesh && mesh.positions && mesh.indices;
+  if (hasValidMesh) {
     this.boundingRadius = (() => {
       let max = 0;
       const p = mesh.positions;
-      for (let i=0; i<p.length; i+=3) {
-        const d = Math.hypot(p[i], p[i+1], p[i+2]);
+      for (let i = 0; i < p.length; i += 3) {
+        const d = Math.hypot(p[i], p[i + 1], p[i + 2]);
         if (d > max) max = d;
       }
       return max;
     })();
 
-    // VBO / IBO
     this.vertexBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffer);
     gl.bufferData(gl.ARRAY_BUFFER, mesh.positions, gl.STATIC_DRAW);
@@ -61,13 +67,12 @@ export class GameObject3D {
     this.indexBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.indexBuffer);
     gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, mesh.indices, gl.STATIC_DRAW);
-    
 
     this.vertexCount = mesh.indices.length;
-    this.indexType   = mesh.indices.BYTES_PER_ELEMENT===2
-      ? gl.UNSIGNED_SHORT : gl.UNSIGNED_INT;
+    this.indexType = mesh.indices.BYTES_PER_ELEMENT === 2
+      ? gl.UNSIGNED_SHORT
+      : gl.UNSIGNED_INT;
 
-    // texCoords (если есть)
     if (mesh.texCoords) {
       this.texCoordBuffer = gl.createBuffer();
       gl.bindBuffer(gl.ARRAY_BUFFER, this.texCoordBuffer);
@@ -75,6 +80,7 @@ export class GameObject3D {
     } else {
       this.texCoordBuffer = null;
     }
+
     if (mesh.normals) {
       this.normalBuffer = gl.createBuffer();
       gl.bindBuffer(gl.ARRAY_BUFFER, this.normalBuffer);
@@ -82,10 +88,20 @@ export class GameObject3D {
     } else {
       this.normalBuffer = null;
     }
-    // cache атрибутов
-    this.aPosLocMap = new WeakMap();
+
+  } else {
+    // Объект без геометрии — всё null / 0
+    this.boundingRadius = 0;
+    this.vertexBuffer = null;
+    this.indexBuffer = null;
+    this.texCoordBuffer = null;
+    this.normalBuffer = null;
+    this.vertexCount = 0;
+    this.indexType = gl.UNSIGNED_SHORT;
   }
 
+  this.aPosLocMap = new WeakMap();
+}
   _loadTexture(src) {
     const gl = this.gl;
     const tex = gl.createTexture();
@@ -134,32 +150,31 @@ export class GameObject3D {
    * Вызывается из WebGLRenderer.render
    */
     /* uAmbientColor = vec3, uNormalMatrix = mat3 */
-    renderWebGL3D(gl, shaderProgram,
-                  uModel, uAmbientColor, uUseTexture, uNormalMatrix) {
-                    const posLoc = this._getAttribLocation(shaderProgram);
-
-                    // ===== модель‑матрица и normal‑matrix =====
-                    const model = mat4.create();
-                    mat4.translate(model, model, this.worldPosition);
-                    gl.uniformMatrix4fv(uModel, false, model);
-                  
-                    const nrm = mat3.create();
-                    mat3.normalFromMat4(nrm, model);
-                    gl.uniformMatrix3fv(uNormalMatrix, false, nrm);
-                  
-                    // ===== цвет или текстура =====
-                    if (this.texture && this.textureLoaded) {
-                      gl.activeTexture(gl.TEXTURE0);
-                      gl.bindTexture(gl.TEXTURE_2D, this.texture);
-                      gl.uniform1i(uUseTexture, true);
-                    } else {
-                      gl.uniform3fv(uAmbientColor, this.color.slice(0, 3));
-                      gl.uniform1i(uUseTexture, false);
-                    }
-    // позиции
-    gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffer);
-    gl.vertexAttribPointer(posLoc, 3, gl.FLOAT, false, 0, 0);
-    gl.enableVertexAttribArray(posLoc);
+    renderWebGL3D(gl, shaderProgram, uModel, uAmbientColor, uUseTexture, uNormalMatrix) {
+      if (!this.vertexBuffer || !this.indexBuffer || this.vertexCount === 0) return;
+    
+      const posLoc = this._getAttribLocation(shaderProgram);
+    
+      const model = mat4.create();
+      mat4.translate(model, model, this.worldPosition);
+      gl.uniformMatrix4fv(uModel, false, model);
+    
+      const nrm = mat3.create();
+      mat3.normalFromMat4(nrm, model);
+      gl.uniformMatrix3fv(uNormalMatrix, false, nrm);
+    
+      if (this.texture && this.textureLoaded) {
+        gl.activeTexture(gl.TEXTURE0);
+        gl.bindTexture(gl.TEXTURE_2D, this.texture);
+        gl.uniform1i(uUseTexture, true);
+      } else {
+        gl.uniform3fv(uAmbientColor, this.color.slice(0, 3));
+        gl.uniform1i(uUseTexture, false);
+      }
+    
+      gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffer);
+      gl.vertexAttribPointer(posLoc, 3, gl.FLOAT, false, 0, 0);
+      gl.enableVertexAttribArray(posLoc);
 
 // texCoords
 const texLoc = gl.getAttribLocation(shaderProgram, "aTexCoord");
