@@ -8,11 +8,16 @@ import type { Scene } from "../core/Scene.ts";
 import { TransformGizmo } from "./helpers/TransformGizmo.js";
 import { drawMeshOutline } from "./helpers/MeshOutlineHelper.js";
 import { vertexShaderSrc, fragmentShaderSrc } from "./shaders/DefaultShader.js";
-import { plainVertexShader, plainFragmentShader } from "./shaders/PlainShader.js";
+import { plainVertexShader, plainFragmentShader } from "./shaders/PlainShader.ts";
 import { initShadowMap, initDepthProgram, calcLightVP } from "./internal/ShadowUtils.js";
 import { drawCameraFrustum } from './helpers/FrustumHelper.js';
 import { AXIS_X_COLOR, AXIS_Y_COLOR, AXIS_Z_COLOR } from "../constants/CoordSystem.js";
 import { drawGizmoScreen } from "./helpers/GizmoScreen.js";
+import { Shader } from "./internal/Shader";
+import { skyboxVertex, skyboxFragment } from "./shaders/SkyboxShader.ts";
+ import { loadTexture } from "../utils/TextureLoader.js";          // ваша helper-функция
+import Daylight_uv     from "../assets/skyBoxes/Daylight_uv.png";
+import { Skybox } from "../Renderer/SkyBox.ts";
 export class WebGLRenderer extends Renderer {
   canvas: HTMLCanvasElement;
   gl: WebGL2RenderingContext;
@@ -21,6 +26,12 @@ export class WebGLRenderer extends Renderer {
   gridSize = 10;
   gridStep = 1;
   public selectedObject: SceneObject | null = null;
+      private skyboxShader!: Shader;
+    private skyboxTex: WebGLTexture | null = null;
+    private skyboxVBO!: WebGLBuffer;
+    private skyboxVAO!: WebGLVertexArrayObject;
+    private skyboxIBO!: WebGLBuffer;   //   ← новый index-buffer
+private skyboxReady = false;       //   ← флаг «текстура загружена»
   // Шейдеры и их локации
   private uNormalMatrix!: WebGLUniformLocation;
   private uLightPos!: WebGLUniformLocation;
@@ -28,7 +39,8 @@ export class WebGLRenderer extends Renderer {
   private uAmbientColor!: WebGLUniformLocation;
   private uSpecularColor!: WebGLUniformLocation;
   private uShininess!: WebGLUniformLocation;
-  private shaderProgram!: WebGLProgram;
+ private defaultShader!: Shader;
+ private plainShader!: Shader;
   private uModel!: WebGLUniformLocation;
   private uView!: WebGLUniformLocation;
   private uProj!: WebGLUniformLocation;
@@ -39,33 +51,48 @@ export class WebGLRenderer extends Renderer {
   private shadowFBO!: WebGLFramebuffer;
   private shadowTex!: WebGLTexture;
   private depthProgram!: WebGLProgram;
+  private shaderProgram!: WebGLProgram;
   private uDepthModel!: WebGLUniformLocation;
   private uDepthLightVP!: WebGLUniformLocation;
   private aPos: number = -1;
   private aTexCoord: number = -1;
-  private plainShaderProgram!: WebGLProgram;
+
   private plain_uModel!: WebGLUniformLocation;
   private plain_uView!: WebGLUniformLocation;
   private plain_uProj!: WebGLUniformLocation;
   private plain_uColor!: WebGLUniformLocation;
   private spriteRenderer: SpriteRenderer;
   private plain_aPos: number = -1; 
-  constructor(graphicalContext: any, backgroundColor: string | [number, number, number]) {
-    super(graphicalContext.getContext(), backgroundColor);
-    this.canvas = graphicalContext.getCanvas();
-    this.gl = graphicalContext.getContext() as WebGL2RenderingContext;
+ constructor(graphicalContext: any,
+            backgroundColor: string | [number, number, number]) {
 
-    this._initWebGL(backgroundColor);
-    this._initShaders();
-    this._setupProjection();
-    initShadowMap(this);          // вынесено
-    initDepthProgram(this);       // вынесено
-    this.spriteRenderer = new SpriteRenderer(
-      this.gl,
-      this.canvas.width,
-      this.canvas.height
-    );
-  }
+  super(graphicalContext.getContext(), backgroundColor);
+
+  this.canvas = graphicalContext.getCanvas();
+  this.gl     = graphicalContext.getContext() as WebGL2RenderingContext;
+
+  this._initWebGL(backgroundColor);
+  this._initShaders();
+
+  /* ---------------- SKYBOX ---------------- */
+  this._initSkyboxResources();            // ← БЕЗ аргументов
+  loadTexture(this.gl, Daylight_uv)        // ← this.gl
+     .then(tex => {
+   this.skyboxTex   = tex;
+   this.skyboxReady = true;   // текстура готова → можно рисовать
+ });
+
+  /* ------------- остальное --------------- */
+  this._setupProjection();
+  initShadowMap(this);
+  initDepthProgram(this);
+
+  this.spriteRenderer = new SpriteRenderer(
+    this.gl,
+    this.canvas.width,
+    this.canvas.height
+  );
+}
   public core: Core | null = null; // Добавляем core
 
   // Метод для установки core в рендерер
@@ -96,53 +123,51 @@ export class WebGLRenderer extends Renderer {
     return shader;
   }
 
-  private _initShaders(): void {
+ private _initShaders(): void {
   const gl = this.gl;
 
-  /* ---------- 1.  ОСНОВНОЙ ШЕЙДЕР (с освещением, тенями, текстурами) ---------- */
-  const vs = this._loadShader(gl.VERTEX_SHADER, vertexShaderSrc);
-  const fs = this._loadShader(gl.FRAGMENT_SHADER, fragmentShaderSrc);
+  /* ────────────────── 1. ОСНОВНОЙ ШЕЙДЕР ────────────────── */
+  this.defaultShader = Shader.fromSource(
+    gl,
+    vertexShaderSrc,
+    fragmentShaderSrc
+  );
+  this.shaderProgram = this.defaultShader.program;
+  this.defaultShader.use();
 
-  this.shaderProgram = gl.createProgram()!;
-  gl.attachShader(this.shaderProgram, vs);
-  gl.attachShader(this.shaderProgram, fs);
-  gl.linkProgram(this.shaderProgram);
+  // uniform-ы
+  this.uNormalMatrix  = this.defaultShader.uniform("uNormalMatrix")!;
+  this.uLightPos      = this.defaultShader.uniform("uLightPos")!;
+  this.uViewPos       = this.defaultShader.uniform("uViewPos")!;
+  this.uAmbientColor  = this.defaultShader.uniform("uAmbientColor")!;
+  this.uSpecularColor = this.defaultShader.uniform("uSpecularColor")!;
+  this.uShininess     = this.defaultShader.uniform("uShininess")!;
+  this.uModel         = this.defaultShader.uniform("uModel")!;
+  this.uView          = this.defaultShader.uniform("uView")!;
+  this.uProj          = this.defaultShader.uniform("uProjection")!;
+  this.uColor         = this.defaultShader.uniform("uColor")!;
+  this.uUseTexture    = this.defaultShader.uniform("uUseTexture")!;
+  this.uTexture       = this.defaultShader.uniform("uTexture")!;
 
-  gl.useProgram(this.shaderProgram);
-
-  this.uNormalMatrix = gl.getUniformLocation(this.shaderProgram, "uNormalMatrix")!;
-  this.uLightPos     = gl.getUniformLocation(this.shaderProgram, "uLightPos")!;
-  this.uViewPos      = gl.getUniformLocation(this.shaderProgram, "uViewPos")!;
-  this.uAmbientColor = gl.getUniformLocation(this.shaderProgram, "uAmbientColor")!;
-  this.uSpecularColor= gl.getUniformLocation(this.shaderProgram, "uSpecularColor")!;
-  this.uShininess    = gl.getUniformLocation(this.shaderProgram, "uShininess")!;
-  this.uModel        = gl.getUniformLocation(this.shaderProgram, "uModel")!;
-  this.uView         = gl.getUniformLocation(this.shaderProgram, "uView")!;
-  this.uProj         = gl.getUniformLocation(this.shaderProgram, "uProjection")!;
-  this.uColor        = gl.getUniformLocation(this.shaderProgram, "uColor")!;
-  this.uUseTexture   = gl.getUniformLocation(this.shaderProgram, "uUseTexture")!;
-  this.uTexture      = gl.getUniformLocation(this.shaderProgram, "uTexture")!;
-
-  this.aPos      = gl.getAttribLocation(this.shaderProgram, "aVertexPosition");
-  this.aTexCoord = gl.getAttribLocation(this.shaderProgram, "aTexCoord");
+  // attrib-ы
+  this.aPos      = this.defaultShader.attrib("aVertexPosition");
+  this.aTexCoord = this.defaultShader.attrib("aTexCoord");
   gl.enableVertexAttribArray(this.aPos);
   gl.enableVertexAttribArray(this.aTexCoord);
 
-  /* ---------- 2.  PLAIN‑ШЕЙДЕР (для экранного гизмо) ---------- */
-  const vsPlain = this._loadShader(gl.VERTEX_SHADER, plainVertexShader);
-  const fsPlain = this._loadShader(gl.FRAGMENT_SHADER, plainFragmentShader);
+  /* ────────────────── 2. PLAIN-ШЕЙДЕР (экранные гизмо/иконки) ────────────────── */
+  this.plainShader = Shader.fromSource(
+    gl,
+    plainVertexShader,
+    plainFragmentShader
+  );
+  this.plainShaderProgram = this.plainShader.program;
 
-  this.plainShaderProgram = gl.createProgram()!;
-  gl.attachShader(this.plainShaderProgram, vsPlain);
-  gl.attachShader(this.plainShaderProgram, fsPlain);
-  gl.linkProgram(this.plainShaderProgram);
-  //  (не активируем — остаётся основной)
-
-  this.plain_uModel = gl.getUniformLocation(this.plainShaderProgram, "uModel")!;
-  this.plain_uView  = gl.getUniformLocation(this.plainShaderProgram, "uView")!;
-  this.plain_uProj  = gl.getUniformLocation(this.plainShaderProgram, "uProjection")!;
-  this.plain_uColor = gl.getUniformLocation(this.plainShaderProgram, "uColor")!;
-  this.plain_aPos   = gl.getAttribLocation(this.plainShaderProgram, "aVertexPosition"); // ← добавлено
+  this.plain_uModel = this.plainShader.uniform("uModel")!;
+  this.plain_uView  = this.plainShader.uniform("uView")!;
+  this.plain_uProj  = this.plainShader.uniform("uProjection")!;
+  this.plain_uColor = this.plainShader.uniform("uColor")!;
+  this.plain_aPos   = this.plainShader.attrib("aVertexPosition");
 }
   /** Настройка матрицы проекции */
   private _setupProjection(): void {
@@ -162,18 +187,58 @@ export class WebGLRenderer extends Renderer {
       mat4.perspective(proj, Math.PI / 4, this.canvas.width / this.canvas.height, 0.1, 100);
     }
 
-    gl.useProgram(this.shaderProgram);
-    gl.uniformMatrix4fv(this.uProj, false, proj);
-  }
- 
+   this.defaultShader.use();
+  gl.uniformMatrix4fv(this.uProj, false, proj);
 
-  
-  setCamera(camera: any): void {
-    this.activeCamera = camera;
-    camera.update();
-    this.gl.uniformMatrix4fv(this.uProj, false, camera.getProjection());
-    this.gl.uniformMatrix4fv(this.uView, false, camera.getView());
   }
+private _initSkyboxResources(): void {
+  const gl = this.gl;
+
+  /* ---------- шейдер ---------- */
+  this.skyboxShader = Shader.fromSource(gl, skyboxVertex, skyboxFragment);
+
+  /* ---------- геометрия куба ---------- */
+  const SKY_VERTS = new Float32Array([
+    -1,-1,-1,  1,-1,-1,  1, 1,-1,  -1, 1,-1,   // back
+    -1,-1, 1,  1,-1, 1,  1, 1, 1,  -1, 1, 1    // front
+  ]);
+  const SKY_INDICES = new Uint16Array([
+    0,1,2, 0,2,3,     // back
+    4,6,5, 4,7,6,     // front
+    3,2,6, 3,6,7,     // top
+    0,5,1, 0,4,5,     // bottom
+    1,5,6, 1,6,2,     // right
+    0,3,7, 0,7,4      // left
+  ]);
+
+  this.skyboxVAO = gl.createVertexArray()!;
+  this.skyboxVBO = gl.createBuffer()!;
+  this.skyboxIBO = gl.createBuffer()!;
+
+  gl.bindVertexArray(this.skyboxVAO);
+
+  /* позиции */
+  gl.bindBuffer(gl.ARRAY_BUFFER, this.skyboxVBO);
+  gl.bufferData(gl.ARRAY_BUFFER, SKY_VERTS, gl.STATIC_DRAW);
+  const aPos = this.skyboxShader.attrib("aPosition");
+  gl.enableVertexAttribArray(aPos);
+  gl.vertexAttribPointer(aPos, 3, gl.FLOAT, false, 0, 0);   // <-- 3 компоненты!
+
+  /* индексы */
+  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.skyboxIBO);
+  gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, SKY_INDICES, gl.STATIC_DRAW);
+
+  gl.bindVertexArray(null);
+}
+  
+setCamera(camera: any) {
+  this.activeCamera = camera;
+  camera.update();
+
+  this.defaultShader.use();                     // <-- главное
+  this.gl.uniformMatrix4fv(this.uProj, false, camera.getProjection());
+  this.gl.uniformMatrix4fv(this.uView, false, camera.getView());
+}
 
   clear(): void {
     this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
@@ -183,9 +248,33 @@ export class WebGLRenderer extends Renderer {
   
     // 1) Очистка буфера
     this.clear();
-  
+if (this.skyboxReady) {
+  gl.depthMask(false);
+  gl.disable(gl.DEPTH_TEST);
+
+  this.skyboxShader.use();
+
+  /* view без переноса (камеру «ставим в центр куба») */
+  const view = mat4.clone(this.activeCamera.getView());
+  view[12] = view[13] = view[14] = 0;
+  gl.uniformMatrix4fv(this.skyboxShader.uniform("uViewNoTrans")!, false, view);
+  gl.uniformMatrix4fv(this.skyboxShader.uniform("uProj")!, false,
+                      this.activeCamera.getProjection());
+
+  gl.activeTexture(gl.TEXTURE0);
+  gl.bindTexture(gl.TEXTURE_2D, this.skyboxTex!);
+  gl.uniform1i(this.skyboxShader.uniform("uSkyTex")!, 0);
+
+  gl.bindVertexArray(this.skyboxVAO);
+  gl.drawElements(gl.TRIANGLES, 36, gl.UNSIGNED_SHORT, 0);
+  gl.bindVertexArray(null);
+
+  gl.depthMask(true);
+  gl.enable(gl.DEPTH_TEST);
+}
+
     // 2) Подготовка шейдера
-    gl.useProgram(this.shaderProgram);
+    this.defaultShader.use();
     const eye = this.activeCamera.position;
     gl.uniform3fv(this.uViewPos, eye);
   
@@ -216,7 +305,7 @@ export class WebGLRenderer extends Renderer {
   
     // 5) Основной рендеринг
     gl.viewport(0, 0, this.canvas.width, this.canvas.height);
-    gl.useProgram(this.shaderProgram);
+    this.defaultShader.use();
   
     if (lightVP) {
       gl.activeTexture(gl.TEXTURE1);

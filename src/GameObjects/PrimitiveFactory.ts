@@ -8,6 +8,7 @@ import { GameObjectCamera } from './GameObjectCamera.js';
 import { GameObjectLight } from './GameObjectLight.js';
 import defaultTextureSrc           from '../assets/Metal052C_1K-JPG/Metal052C_1K-JPG_Color.jpg';  // добавили!
 import { GameObjectCharacter } from './GameObjectCharacter.js';
+import { GameObjectSpawnPoint } from './GameObjectSpawnPoint.js';
 const DEFAULT_PRIMITIVE_COLOR = '#7f7f7f'; // матово-серый
 
 class PrimitiveFactory {
@@ -63,7 +64,9 @@ primitiveFactory.register(
       textureSrc: texture,
     })
 );
-
+primitiveFactory.register('spawnPoint', (gl, opts) =>
+  new GameObjectSpawnPoint(gl, opts)
+);
 primitiveFactory.register(
   'cylinder',
   (gl, { radius = 1, height = 2, position = [0, 0, -5], color, texture }) =>
