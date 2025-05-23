@@ -1,72 +1,110 @@
+// src/primitives/3dPrimitives/createTerrainGeometry.js
+import { COORD } from '../../../core/CoordinateSystem.js';
+
+export interface TerrainOptions {
+  width?: number;
+  depth?: number;
+  seg?: number;
+  /** heightFn(u, v) возвращает высоту вдоль COORD.UP */
+  heightFn?: (u: number, v: number) => number;
+  /** базисные векторы в плоскости «горизонта» */
+  axisA?: [number, number, number];
+  axisB?: [number, number, number];
+}
+
+/**
+ * Генерирует плоскость террейна в базисе (axisA, axisB, UP).
+ */
 export function createTerrainGeometry({
-  width = 10,
-  depth = 10,
-  seg = 64,
-  heightFn = (_) => 0,
-} = {}) {
-  const positions = [];
-  const normals = [];
-  const texCoords = [];
-  const indices = [];
+  width    = 10,
+  depth    = 10,
+  seg      = 64,
+  heightFn = () => 0,
+  axisA    = COORD.RIGHT,
+  axisB    = COORD.FORWARD
+}: TerrainOptions = {}) {
+
+  const positions: number[] = [];
+  const normals:   number[] = [];
+  const texCoords: number[] = [];
+  const indices:   number[] = [];
 
   const cols = seg + 1;
   const rows = seg + 1;
 
-  for (let y = 0; y < rows; y++) {
-    const ty = y / seg;
-    const py = ty * depth - depth / 2;
-    for (let x = 0; x < cols; x++) {
-      const tx = x / seg;
-      const px = tx * width - width / 2;
-      const pz = heightFn(px, py); // теперь pz — высота (Z‑up)
-      positions.push(px, py, pz); // X, Y, Z
-      texCoords.push(tx, 1 - ty);
-      normals.push(0, 0, 1); // временно вверх по Z
+  // 1) Построим вершины
+  for (let j = 0; j < rows; j++) {
+    const v = j / seg;
+    const coordV = (v - 0.5) * depth;
+
+    for (let i = 0; i < cols; i++) {
+      const u = i / seg;
+      const coordU = (u - 0.5) * width;
+      const h = heightFn(coordU, coordV);
+
+      // P = axisA * coordU + axisB * coordV + UP * h
+      positions.push(
+        axisA[0] * coordU + axisB[0] * coordV + COORD.UP[0] * h,
+        axisA[1] * coordU + axisB[1] * coordV + COORD.UP[1] * h,
+        axisA[2] * coordU + axisB[2] * coordV + COORD.UP[2] * h
+      );
+      texCoords.push(u, 1 - v);
+      // временный нормаль, пересчитаем ниже
+      normals.push(0, 0, 0);
     }
   }
 
-  for (let y = 0; y < seg; y++) {
-    for (let x = 0; x < seg; x++) {
-      const i = y * cols + x;
-      indices.push(i, i + 1, i + cols);
-      indices.push(i + 1, i + cols + 1, i + cols);
+  // 2) Индексы треугольников
+  for (let j = 0; j < seg; j++) {
+    for (let i = 0; i < seg; i++) {
+      const idx = j * cols + i;
+      indices.push(
+        idx, idx + 1,     idx + cols,
+        idx + 1, idx + cols + 1, idx + cols
+      );
     }
   }
 
-  // Пересчёт нормалей
-  for (let y = 0; y < rows; y++) {
-    for (let x = 0; x < cols; x++) {
-      const i = (y * cols + x) * 3;
+  // 3) Пересчёт нормалей по площадям соседних треугольников
+  // обнулим сначала
+  for (let k = 0; k < normals.length; k++) normals[k] = 0;
 
-      const getZ = (xi, yi) => {
-        xi = Math.max(0, Math.min(cols - 1, xi));
-        yi = Math.max(0, Math.min(rows - 1, yi));
-        return positions[(yi * cols + xi) * 3 + 2];
-      };
+  for (let k = 0; k < indices.length; k += 3) {
+    const i0 = indices[k + 0] * 3;
+    const i1 = indices[k + 1] * 3;
+    const i2 = indices[k + 2] * 3;
 
-      const zL = getZ(x - 1, y);
-      const zR = getZ(x + 1, y);
-      const zD = getZ(x, y - 1);
-      const zU = getZ(x, y + 1);
+    // три вершины треугольника
+    const v0 = positions.slice(i0, i0 + 3) as [number,number,number];
+    const v1 = positions.slice(i1, i1 + 3) as [number,number,number];
+    const v2 = positions.slice(i2, i2 + 3) as [number,number,number];
 
-      const dx = zR - zL;
-      const dy = zU - zD;
+    // нормаль = (v1 - v0) × (v2 - v0)
+    const ux = v1[0] - v0[0], uy = v1[1] - v0[1], uz = v1[2] - v0[2];
+    const vx = v2[0] - v0[0], vy = v2[1] - v0[1], vz = v2[2] - v0[2];
+    const nx = uy * vz - uz * vy;
+    const ny = uz * vx - ux * vz;
+    const nz = ux * vy - uy * vx;
 
-      const nx = -dx;
-      const ny = -dy;
-      const nz = 2;
-      const len = Math.hypot(nx, ny, nz);
+    // аккумулируем
+    normals[i0 + 0] += nx; normals[i0 + 1] += ny; normals[i0 + 2] += nz;
+    normals[i1 + 0] += nx; normals[i1 + 1] += ny; normals[i1 + 2] += nz;
+    normals[i2 + 0] += nx; normals[i2 + 1] += ny; normals[i2 + 2] += nz;
+  }
 
-      normals[i + 0] = nx / len;
-      normals[i + 1] = ny / len;
-      normals[i + 2] = nz / len;
-    }
+  // нормализуем все нормали
+  for (let k = 0; k < normals.length; k += 3) {
+    const x = normals[k], y = normals[k + 1], z = normals[k + 2];
+    const len = Math.hypot(x, y, z) || 1;
+    normals[k    ] = x / len;
+    normals[k + 1] = y / len;
+    normals[k + 2] = z / len;
   }
 
   return {
     positions: new Float32Array(positions),
-    normals: new Float32Array(normals),
-    indices: new Uint16Array(indices),
+    normals:   new Float32Array(normals),
+    indices:   new Uint16Array(indices),
     texCoords: new Float32Array(texCoords),
   };
 }

@@ -1,6 +1,6 @@
 import { vec3 } from '../../vendor/gl-matrix/index.js';
 import type { CameraInterface } from '../../types/RendererTypes.js';
-import { AXIS_Z_COLOR } from '../../constants/CoordSystem.js';
+import { COORD } from '../../core/CoordinateSystem.ts';
 
 export function drawCameraFrustum(
   gl: WebGLRenderingContext,
@@ -41,5 +41,5 @@ export function drawCameraFrustum(
     ...ftl, ...ftr, ...ftr, ...fbr, ...fbr, ...fbl, ...fbl, ...ftl
   ]);
 
-  drawLines(lines, AXIS_Z_COLOR); // Цвет можно оставить жёлтым, либо сменить на синий (ось Z)
+  drawLines(lines, COORD.AXIS_Z_COLOR);
 }

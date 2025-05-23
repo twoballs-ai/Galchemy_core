@@ -1,4 +1,5 @@
 import { mat4 } from '../../vendor/gl-matrix/index.js';
+import { COORD } from "../../core/CoordinateSystem";
 import { UP } from '../../constants/CoordSystem.ts';  // добавим импорт
 
 export class BaseCamera {
@@ -13,7 +14,8 @@ export class BaseCamera {
   }
 
   update() {
-    mat4.lookAt(this.view, this.position, this.lookAt, this.up);
+    const m = COORD.lookAt(this.position as vec3, this.lookAt as vec3);
+this.view = m;
   }
 
   resize(w, h) {

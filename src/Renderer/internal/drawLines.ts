@@ -5,7 +5,7 @@ import {
   AXIS_Y_COLOR,
   AXIS_Z_COLOR,
   SELECTION_COLOR
-} from '../../constants/CoordSystem.js';
+} from '../../constants/CoordSystem.ts';
 
 const COLORS = {
   x: AXIS_X_COLOR,
@@ -18,7 +18,7 @@ const COLORS = {
  * Универсальный рендерер линий. Если передан ctx — использует plainShaderProgram.
  */
 export function drawLines(
-  gl: WebGLRenderingContext,
+  gl: WebGL2RenderingContext,
   attribLoc: number,
   colorLoc: WebGLUniformLocation,
   vertices: Float32Array,

@@ -1,5 +1,6 @@
 import { BaseCamera } from './BaseCamera.ts';
 import { mat4, vec3 } from '../../vendor/gl-matrix/index.js';
+import { COORD } from "../../core/CoordinateSystem";
 import { UP } from '../../constants/CoordSystem.js';
 export class EditorCamera extends BaseCamera {
   yaw = 0;
@@ -21,12 +22,13 @@ export class EditorCamera extends BaseCamera {
   }
 
   update() {
-    const x = this.target[0] + Math.cos(this.yaw) * Math.cos(this.pitch) * this.distance;
-    const z = this.target[2] + Math.sin(this.pitch) * this.distance;
-    const y = this.target[1] + Math.sin(this.yaw) * Math.cos(this.pitch) * this.distance;
-    this.position = [x, y, z];
-  
-    mat4.lookAt(this.view, this.position, this.target, UP);
+    this.position = [
+      this.target[0] + Math.cos(this.yaw) * Math.cos(this.pitch) * this.distance,
+      this.target[1] + Math.sin(this.yaw) * Math.cos(this.pitch) * this.distance,
+      this.target[2] + Math.sin(this.pitch) * this.distance
+    ];
+    const m = COORD.lookAt(this.position as vec3, this.target as vec3);
+    this.view = m;
   }
 
   /** Переключение перспективной/ортографической камеры */

@@ -1,5 +1,5 @@
 import { Renderer } from "./Renderer.js";
-import { mat3, mat4, vec3 } from "../vendor/gl-matrix/index.js";
+import { mat3, mat4 } from "../vendor/gl-matrix/index.js";
 import { SpriteRenderer } from "./SpriteRenderer.js";
 import { drawGrid } from "./helpers/GridHelper.js";
 import { drawGizmo } from "./helpers/GizmoHelper.js";
@@ -12,12 +12,11 @@ import { plainVertexShader, plainFragmentShader } from "./shaders/PlainShader.ts
 import { initShadowMap, initDepthProgram, calcLightVP } from "./internal/ShadowUtils.js";
 import { drawCameraFrustum } from './helpers/FrustumHelper.js';
 import { AXIS_X_COLOR, AXIS_Y_COLOR, AXIS_Z_COLOR } from "../constants/CoordSystem.js";
+import { COORD } from "../core/CoordinateSystem";
 import { drawGizmoScreen } from "./helpers/GizmoScreen.js";
 import { Shader } from "./internal/Shader";
-import { skyboxVertex, skyboxFragment } from "./shaders/SkyboxShader.ts";
- import { loadTexture } from "../utils/TextureLoader.js";          // ваша helper-функция
-import Daylight_uv     from "../assets/skyBoxes/Daylight_uv.png";
-import { Skybox } from "../Renderer/SkyBox.ts";
+import { Skybox } from "../GameObjects/SkyBox.ts";
+import { DaylightBoxPaths } from "../assets/skyBoxes/DaylightBox";
 export class WebGLRenderer extends Renderer {
   canvas: HTMLCanvasElement;
   gl: WebGL2RenderingContext;
@@ -26,12 +25,7 @@ export class WebGLRenderer extends Renderer {
   gridSize = 10;
   gridStep = 1;
   public selectedObject: SceneObject | null = null;
-      private skyboxShader!: Shader;
-    private skyboxTex: WebGLTexture | null = null;
-    private skyboxVBO!: WebGLBuffer;
-    private skyboxVAO!: WebGLVertexArrayObject;
-    private skyboxIBO!: WebGLBuffer;   //   ← новый index-buffer
-private skyboxReady = false;       //   ← флаг «текстура загружена»
+  private skybox!: Skybox;
   // Шейдеры и их локации
   private uNormalMatrix!: WebGLUniformLocation;
   private uLightPos!: WebGLUniformLocation;
@@ -70,17 +64,11 @@ private skyboxReady = false;       //   ← флаг «текстура загр
 
   this.canvas = graphicalContext.getCanvas();
   this.gl     = graphicalContext.getContext() as WebGL2RenderingContext;
-
+  COORD.setGL(this.gl); // ✅ инициализируем систему координат
+  this.skybox = new Skybox(this.gl, DaylightBoxPaths); 
   this._initWebGL(backgroundColor);
   this._initShaders();
 
-  /* ---------------- SKYBOX ---------------- */
-  this._initSkyboxResources();            // ← БЕЗ аргументов
-  loadTexture(this.gl, Daylight_uv)        // ← this.gl
-     .then(tex => {
-   this.skyboxTex   = tex;
-   this.skyboxReady = true;   // текстура готова → можно рисовать
- });
 
   /* ------------- остальное --------------- */
   this._setupProjection();
@@ -171,74 +159,33 @@ private skyboxReady = false;       //   ← флаг «текстура загр
 }
   /** Настройка матрицы проекции */
   private _setupProjection(): void {
-    const gl = this.gl;
-    const proj = mat4.create();
-    const cam = this.activeCamera;
-
-    if (cam?.isCamera) {
-      mat4.perspective(
-        proj,
-        (cam.fov * Math.PI) / 180,
-        this.canvas.width / this.canvas.height,
-        cam.near,
-        cam.far
-      );
-    } else {
-      mat4.perspective(proj, Math.PI / 4, this.canvas.width / this.canvas.height, 0.1, 100);
-    }
-
-   this.defaultShader.use();
-  gl.uniformMatrix4fv(this.uProj, false, proj);
-
+        const gl  = this.gl;
+        const cam = this.activeCamera;
+    
+        /* через фасад → Z-up, right-hand, clip-range −1…1 */
+        const proj = COORD.perspective(
+          (cam?.fov ?? 45) * Math.PI / 180,
+          this.canvas.width / this.canvas.height,
+          cam?.near ?? 0.1,
+          cam?.far  ?? 100
+        );
+    
+        this.defaultShader.use();
+        gl.uniformMatrix4fv(this.uProj, false, proj);
   }
-private _initSkyboxResources(): void {
-  const gl = this.gl;
 
-  /* ---------- шейдер ---------- */
-  this.skyboxShader = Shader.fromSource(gl, skyboxVertex, skyboxFragment);
-
-  /* ---------- геометрия куба ---------- */
-  const SKY_VERTS = new Float32Array([
-    -1,-1,-1,  1,-1,-1,  1, 1,-1,  -1, 1,-1,   // back
-    -1,-1, 1,  1,-1, 1,  1, 1, 1,  -1, 1, 1    // front
-  ]);
-  const SKY_INDICES = new Uint16Array([
-    0,1,2, 0,2,3,     // back
-    4,6,5, 4,7,6,     // front
-    3,2,6, 3,6,7,     // top
-    0,5,1, 0,4,5,     // bottom
-    1,5,6, 1,6,2,     // right
-    0,3,7, 0,7,4      // left
-  ]);
-
-  this.skyboxVAO = gl.createVertexArray()!;
-  this.skyboxVBO = gl.createBuffer()!;
-  this.skyboxIBO = gl.createBuffer()!;
-
-  gl.bindVertexArray(this.skyboxVAO);
-
-  /* позиции */
-  gl.bindBuffer(gl.ARRAY_BUFFER, this.skyboxVBO);
-  gl.bufferData(gl.ARRAY_BUFFER, SKY_VERTS, gl.STATIC_DRAW);
-  const aPos = this.skyboxShader.attrib("aPosition");
-  gl.enableVertexAttribArray(aPos);
-  gl.vertexAttribPointer(aPos, 3, gl.FLOAT, false, 0, 0);   // <-- 3 компоненты!
-
-  /* индексы */
-  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.skyboxIBO);
-  gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, SKY_INDICES, gl.STATIC_DRAW);
-
-  gl.bindVertexArray(null);
-}
   
-setCamera(camera: any) {
-  this.activeCamera = camera;
-  camera.update();
-
-  this.defaultShader.use();                     // <-- главное
-  this.gl.uniformMatrix4fv(this.uProj, false, camera.getProjection());
-  this.gl.uniformMatrix4fv(this.uView, false, camera.getView());
-}
+  setCamera(camera: any) {
+      this.activeCamera = camera;
+      camera.update();
+    
+      /* camera.getProjection()/getView теперь ДОЛЖНЫ возвращать
+    +     то, что построено с использованием COORD – это будет
+    +     сделано в самом классе камеры. */
+      this.defaultShader.use();
+      this.gl.uniformMatrix4fv(this.uProj, false, camera.getProjection());
+      this.gl.uniformMatrix4fv(this.uView, false, camera.getView());
+     }
 
   clear(): void {
     this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
@@ -248,31 +195,10 @@ setCamera(camera: any) {
   
     // 1) Очистка буфера
     this.clear();
-if (this.skyboxReady) {
-  gl.depthMask(false);
-  gl.disable(gl.DEPTH_TEST);
-
-  this.skyboxShader.use();
-
-  /* view без переноса (камеру «ставим в центр куба») */
-  const view = mat4.clone(this.activeCamera.getView());
-  view[12] = view[13] = view[14] = 0;
-  gl.uniformMatrix4fv(this.skyboxShader.uniform("uViewNoTrans")!, false, view);
-  gl.uniformMatrix4fv(this.skyboxShader.uniform("uProj")!, false,
-                      this.activeCamera.getProjection());
-
-  gl.activeTexture(gl.TEXTURE0);
-  gl.bindTexture(gl.TEXTURE_2D, this.skyboxTex!);
-  gl.uniform1i(this.skyboxShader.uniform("uSkyTex")!, 0);
-
-  gl.bindVertexArray(this.skyboxVAO);
-  gl.drawElements(gl.TRIANGLES, 36, gl.UNSIGNED_SHORT, 0);
-  gl.bindVertexArray(null);
-
-  gl.depthMask(true);
-  gl.enable(gl.DEPTH_TEST);
-}
-
+    this.skybox.render(
+      this.activeCamera.getView(),
+      this.activeCamera.getProjection()
+    );
     // 2) Подготовка шейдера
     this.defaultShader.use();
     const eye = this.activeCamera.position;
@@ -384,7 +310,7 @@ if (this.skyboxReady) {
     if (helpers) {
       drawGrid(this);
       drawGizmo(this);        // центральное
-      drawGizmoScreen(this)
+
       for (const o of scene.objects) {
         if ((o as any).isCamera && o.camera) {
           drawCameraFrustum(gl, this._drawLines.bind(this), o.camera);

@@ -1,6 +1,11 @@
 // src/Renderer/helpers/TransformGizmo.ts
 import { mat4, vec3 } from "../../vendor/gl-matrix/index.js";
-import { AXIS_X_COLOR, AXIS_Y_COLOR, AXIS_Z_COLOR } from "../../constants/CoordSystem.js";
+import {
+  AXIS_X_COLOR, AXIS_Y_COLOR, AXIS_Z_COLOR,
+  RIGHT, UP, FORWARD
+} from "../../constants/CoordSystem.js";
+import { COORD } from "../../core/CoordinateSystem.js";
+import type { WebGLRenderer } from "../renderers/WebGLRenderer.js";
 
 export enum GizmoMode {
   TRANSLATE = 'translate',
@@ -19,19 +24,23 @@ export class TransformGizmo {
     this.mode = mode;
   }
 
-  draw(renderer: any) {
-    const gl = renderer.gl;
+  private getAxisVector(axis: 'x' | 'y' | 'z'): vec3 {
+    return {
+      x: COORD.RIGHT,
+      y: COORD.FORWARD,
+      z: COORD.UP,
+    }[axis];
+  }
+
+  draw(renderer: WebGLRenderer) {
+    const { gl, plainShaderProgram, plain_aPos, plain_uModel, plain_uView, plain_uProj, plain_uColor, activeCamera } = renderer;
     const obj = renderer.selectedObject;
     if (!obj || !obj.position) return;
 
     const pos = obj.position;
-    const drawLine = (axis: 'x' | 'y' | 'z', color: number[]) => {
-      const dir = {
-        x: [1, 0, 0],
-        y: [0, 1, 0],
-        z: [0, 0, 1],
-      }[axis] as vec3;
 
+    const drawLine = (axis: 'x' | 'y' | 'z', color: number[]) => {
+      const dir = this.getAxisVector(axis);
       const vertices = new Float32Array([
         pos[0], pos[1], pos[2],
         pos[0] + dir[0], pos[1] + dir[1], pos[2] + dir[2],
@@ -41,14 +50,14 @@ export class TransformGizmo {
       gl.bindBuffer(gl.ARRAY_BUFFER, buf);
       gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
 
-      gl.useProgram(renderer.plainShaderProgram);
-      gl.uniformMatrix4fv(renderer.plain_uModel, false, mat4.create());
-      gl.uniformMatrix4fv(renderer.plain_uView, false, renderer.activeCamera.getView());
-      gl.uniformMatrix4fv(renderer.plain_uProj, false, renderer.activeCamera.getProjection());
-      gl.uniform4fv(renderer.plain_uColor, [...color, 1]);
+      gl.useProgram(plainShaderProgram);
+      gl.uniformMatrix4fv(plain_uModel, false, mat4.create());
+      gl.uniformMatrix4fv(plain_uView, false, activeCamera.getView());
+      gl.uniformMatrix4fv(plain_uProj, false, activeCamera.getProjection());
+      gl.uniform4fv(renderer.plain_uColor, color);
 
-      gl.vertexAttribPointer(renderer.plain_aPos, 3, gl.FLOAT, false, 0, 0);
-      gl.enableVertexAttribArray(renderer.plain_aPos);
+      gl.vertexAttribPointer(plain_aPos, 3, gl.FLOAT, false, 0, 0);
+      gl.enableVertexAttribArray(plain_aPos);
 
       gl.drawArrays(gl.LINES, 0, 2);
       gl.deleteBuffer(buf);
@@ -59,28 +68,23 @@ export class TransformGizmo {
     drawLine('z', AXIS_Z_COLOR);
   }
 
-  onMouseDown(ray: any, object: any) {
-    // TODO: intersect ray with gizmo axis
+  onMouseDown(ray: { origin: vec3 }, object: any) {
     this.isDragging = true;
     vec3.copy(this.initialPosition, object.position);
-    vec3.copy(this.dragStart, ray.origin); // Simplified
+    vec3.copy(this.dragStart, ray.origin);
   }
 
-  onMouseMove(ray: any, object: any) {
+  onMouseMove(ray: { origin: vec3 }, object: any) {
     if (!this.isDragging || !this.activeAxis) return;
+
     const delta = vec3.create();
     vec3.subtract(delta, ray.origin, this.dragStart);
 
-    // Move object along selected axis
-    const axisVec = {
-      x: [1, 0, 0],
-      y: [0, 1, 0],
-      z: [0, 0, 1],
-    }[this.activeAxis] as vec3;
-
+    const axisVec = this.getAxisVector(this.activeAxis);
     const movement = vec3.dot(delta, axisVec);
-    const updated = vec3.scaleAndAdd(vec3.create(), this.initialPosition, axisVec, movement);
-    object.position = updated;
+
+    const newPos = vec3.scaleAndAdd(vec3.create(), this.initialPosition, axisVec, movement);
+    object.position = newPos;
   }
 
   onMouseUp() {

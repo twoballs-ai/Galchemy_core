@@ -9,7 +9,16 @@ import { GameObjectLight } from './GameObjectLight.js';
 import defaultTextureSrc           from '../assets/Metal052C_1K-JPG/Metal052C_1K-JPG_Color.jpg';  // добавили!
 import { GameObjectCharacter } from './GameObjectCharacter.js';
 import { GameObjectSpawnPoint } from './GameObjectSpawnPoint.js';
-const DEFAULT_PRIMITIVE_COLOR = '#7f7f7f'; // матово-серый
+import { COORD } from '../core/CoordinateSystem.js';
+const DEFAULT_PRIMITIVE_COLOR = '#7f7f7f';
+const DEFAULT_DISTANCE = 5;
+
+// хелпер для позиции «направо-назад» от цели
+function defaultPosition(distance = DEFAULT_DISTANCE) {
+  return COORD.FORWARD.map(c => -c * distance) as [number,number,number];
+}
+
+// SPHERE
 
 class PrimitiveFactory {
   registry = {};
@@ -53,29 +62,47 @@ primitiveFactory.register(
       textureSrc: texture,
     })
 );
-
+// CUBE
 primitiveFactory.register(
   'cube',
-  (gl, { size = 1, position = [0, 0, -5], color, texture }) =>
-    new GameObject3D(gl, {
-      mesh     : createCubeGeometry(size),
-      position,
+  (gl, { size = 1, position, color, texture }) => {
+    const pos = position ?? defaultPosition();
+    return new GameObject3D(gl, {
+      mesh      : createCubeGeometry(size),
+      position  : pos,
       color,
-      textureSrc: texture,
-    })
+      textureSrc: texture
+    });
+  }
 );
-primitiveFactory.register('spawnPoint', (gl, opts) =>
-  new GameObjectSpawnPoint(gl, opts)
-);
+
+// CYLINDER — ось «вверх» теперь COORD.UP
 primitiveFactory.register(
   'cylinder',
-  (gl, { radius = 1, height = 2, position = [0, 0, -5], color, texture }) =>
-    new GameObject3D(gl, {
-      mesh     : createCylinderGeometry(radius, height),
-      position,
+  (gl, { radius = 1, height = 2, position, color, texture }) => {
+    const pos = position ?? defaultPosition();
+    const mesh = createCylinderGeometry(radius, height);
+
+    // если исходная геометрия вдоль Y, а UP = Z, 
+    // поворачиваем её вокруг X на –90°:
+    if (COORD.UP[2] === 1 && COORD.FORWARD[1] === 1) {
+      // Y-up — не нужно
+    } else if (COORD.UP[2] === 1) {
+      // Z-up: цилиндр вдоль Z
+      for (let i = 0; i < mesh.positions.length; i += 3) {
+        const y = mesh.positions[i+1];
+        mesh.positions[i+1] = mesh.positions[i+2];
+        mesh.positions[i+2] = -y;
+      }
+    }
+
+    return new GameObject3D(gl, {
+      mesh,
+      position : pos,
       color,
-      textureSrc: texture,
-    })
+      textureSrc: texture
+    });
+  }
 );
 primitiveFactory.register(
   'camera',
@@ -84,20 +111,26 @@ primitiveFactory.register(
 primitiveFactory.register(
   'terrain',
   (gl, {
-    width = 10,
-    depth = 10,
-    seg = 64,
-    position = [0, 0, 0],
-    color,
-    texture,
-    heightFn = (x, z) => 0,
-  }) =>
-    new GameObject3D(gl, {
-      mesh: createTerrainGeometry({ width, depth, seg, heightFn }),
-      position,
+    width = 10, depth = 10, seg = 64,
+    position, color, texture, heightFn = (x,z) => 0
+  }) => {
+    const pos = position ?? [0,0,0];
+    // создаём «горизонтальную» плоскость в зависимости от UP_AXIS:
+    const mesh = createTerrainGeometry({
+      width, depth, seg,
+      // heightFn всегда принимает (u, v) в плоскости A×B
+      heightFn: (u,v) => heightFn(u,v),
+      // передаём базисные векторы
+      axisA: COORD.RIGHT,
+      axisB: COORD.FORWARD
+    });
+    return new GameObject3D(gl, {
+      mesh,
+      position: pos,
       color,
-      textureSrc: texture,
-    })
+      textureSrc: texture
+    });
+  }
 );
 primitiveFactory.register('light', (gl, opts) => new GameObjectLight(gl, opts));
 
