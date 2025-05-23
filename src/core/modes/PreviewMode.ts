@@ -1,4 +1,4 @@
-import { BaseMode } from './BaseMode.js';
+import { BaseMode } from './BaseMode.ts';
 
 export class PreviewMode extends BaseMode {
   enter(core) {

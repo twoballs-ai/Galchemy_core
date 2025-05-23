@@ -6,10 +6,10 @@ import { primitiveFactory } from '../GameObjects/PrimitiveFactory.js';   // ← 
 import Entity             from '../GameObjects/EntityWrapper.js';
 import { getSize }        from '../utils/getSize.js';
 
-import { loadGLB }        from '../utils/GLTFLoader.js';
+import { loadGLB }        from '../utils/GLTFLoader.ts';
 
 import { EditorMode }     from './modes/EditorMode.ts';
-import { PreviewMode }    from './modes/PreviewMode.js';
+import { PreviewMode }    from './modes/PreviewMode.ts';
 import { patchObject, updateGeometry } from './helpers/objectUpdater.js';
 
 export { GameObject3D }   from '../GameObjects/primitives/GameObject3D.js';
@@ -96,16 +96,15 @@ class GameFacade {
   }
   /* «сахар»-методы ------------------------------------------- */
 
-  spawnSphere   (r=2, seg=24, pos=[0,0,-5], color='#fff')      {
-    return this.spawnPrimitive('sphere',   { radius:r, segments:seg, position:pos, color });
-  }
-  spawnCube     (size=1,       pos=[0,0,-5], color='#e74c3c')  {
-    return this.spawnPrimitive('cube',     { size, position:pos, color });
-  }
-  spawnCylinder (r=1, h=2,     pos=[0,0,-5], color='#2ecc71')  {
-    return this.spawnPrimitive('cylinder', { radius:r, height:h, position:pos, color });
-  }
-
+spawnSphere   (r=2, seg=24, pos=[0,-5,0], color='#fff') {
+  return this.spawnPrimitive('sphere', { radius:r, segments:seg, position:pos, color });
+}
+spawnCube     (size=1, pos=[0,-5,0], color='#e74c3c') {
+  return this.spawnPrimitive('cube', { size, position:pos, color });
+}
+spawnCylinder (r=1, h=2, pos=[0,-5,0], color='#2ecc71') {
+  return this.spawnPrimitive('cylinder', { radius:r, height:h, position:pos, color });
+}
   /* -------- загрузка glTF ----------------------------------- */
 
   async spawn3DModel(path, position=[0,0,0]) {

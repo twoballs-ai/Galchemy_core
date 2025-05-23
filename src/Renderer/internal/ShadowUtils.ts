@@ -59,7 +59,7 @@ export function calcLightVP(light: any): mat4 {
   const view = mat4.create();
   const proj = mat4.create();
                                
-    mat4.lookAt(view, light.position, [0,0,0], [0,0,1]);
+    mat4.lookAt(view, light.position, [0, 0, 0], [0, 1, 0]); 
 
   const size = 10;
   mat4.ortho(proj, -size, size, -size, size, 0.1, 40);

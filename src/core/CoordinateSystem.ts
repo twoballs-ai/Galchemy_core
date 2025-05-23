@@ -6,7 +6,6 @@ import {
 
 export type Handedness = "RH" | "LH";
 
-/* Путь к файлам кубмапы */
 export interface CubemapPaths {
   posx: string;
   negx: string;
@@ -56,7 +55,7 @@ export class CoordinateSystem {
     if (this.handedness === "RH") {
       mat4.lookAt(m, eye, target, up);
     } else {
-      mat4.lookAtLH!(m, eye, target, up); // LH реализация — ваша
+      mat4.lookAtLH!(m, eye, target, up);
     }
     return m;
   }
@@ -65,38 +64,27 @@ export class CoordinateSystem {
     const v = mat4.clone(view);
     v[12] = v[13] = v[14] = 0;
 
-    if (UP_AXIS === "Z") {
-      v[2] = 0; v[6] = 0; v[10] = 1;
+    if (UP_AXIS === "Y") {
+      v[1] = 0; v[5] = 1; v[9] = 0;  // Y-вверх
     } else {
-      v[1] = 0; v[5] = 1; v[9] = 0;
+      v[2] = 0; v[6] = 0; v[10] = 1; // Z-вверх
     }
 
     return v;
   }
+
   resolveCubemapOrder(paths: CubemapPaths): Record<number, string> {
     const g = this.gl!;
-    if (UP_AXIS === "Z") {
-      return {
-        [g.TEXTURE_CUBE_MAP_POSITIVE_X]: paths.posx,
-        [g.TEXTURE_CUBE_MAP_NEGATIVE_X]: paths.negx,
-        [g.TEXTURE_CUBE_MAP_POSITIVE_Y]: paths.posz, // world Z+
-        [g.TEXTURE_CUBE_MAP_NEGATIVE_Y]: paths.negz, // world Z–
-        [g.TEXTURE_CUBE_MAP_POSITIVE_Z]: paths.posy, // world Y+
-        [g.TEXTURE_CUBE_MAP_NEGATIVE_Z]: paths.negy  // world Y–
-      };
-    } else {
-      return {
-        [g.TEXTURE_CUBE_MAP_POSITIVE_X]: paths.posx,
-        [g.TEXTURE_CUBE_MAP_NEGATIVE_X]: paths.negx,
-        [g.TEXTURE_CUBE_MAP_POSITIVE_Y]: paths.posy,
-        [g.TEXTURE_CUBE_MAP_NEGATIVE_Y]: paths.negy,
-        [g.TEXTURE_CUBE_MAP_POSITIVE_Z]: paths.posz,
-        [g.TEXTURE_CUBE_MAP_NEGATIVE_Z]: paths.negz
-      };
-    }
+    // Y-up: стандартный GL/WebGL/WebGPU layout
+    return {
+      [g.TEXTURE_CUBE_MAP_POSITIVE_X]: paths.posx, // right
+      [g.TEXTURE_CUBE_MAP_NEGATIVE_X]: paths.negx, // left
+      [g.TEXTURE_CUBE_MAP_POSITIVE_Y]: paths.posy, // top (Y+)
+      [g.TEXTURE_CUBE_MAP_NEGATIVE_Y]: paths.negy, // bottom (Y-)
+      [g.TEXTURE_CUBE_MAP_POSITIVE_Z]: paths.posz, // back (Z+)
+      [g.TEXTURE_CUBE_MAP_NEGATIVE_Z]: paths.negz  // front (Z-)
+    };
   }
-  
 }
 
-/* создаём синглтон */
 export const COORD = new CoordinateSystem();

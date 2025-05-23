@@ -1,91 +1,97 @@
-/* ------------------------------------------------------------------
-   ЕДИНСТВЕННОЕ содержание файла – сырой текст вершинного и
-   фрагментного шейдера.  Ни логики, ни compile‑функций здесь нет.
-   ------------------------------------------------------------------ */
+export const vertexShaderSrc = `#version 300 es
+precision highp float;
 
-   export const vertexShaderSrc = /* glsl */ `
-   attribute vec3 aVertexPosition;
-   attribute vec3 aVertexNormal;
-   attribute vec2 aTexCoord;
-   
-   uniform mat4 uModel, uView, uProjection, uLightVP;
-   uniform mat3 uNormalMatrix;
-   
-   varying vec4 vShadowPos;
-   varying vec3 vNormal;
-   varying vec3 vFragPos;
-   varying vec2 vTexCoord;
-   
-   void main () {
-     vec4 worldPos   = uModel * vec4(aVertexPosition, 1.0);
-     vFragPos        = worldPos.xyz;
-     vNormal         = normalize(uNormalMatrix * aVertexNormal);
-     vTexCoord       = aTexCoord;
-     vShadowPos      = uLightVP * worldPos;
-     gl_Position     = uProjection * uView * worldPos;
-   }
-   `;
-   
-   export const fragmentShaderSrc = /* glsl */ `
-        precision mediump float;
+in vec3 aVertexPosition;
+in vec3 aVertexNormal;
+in vec2 aTexCoord;
 
-        #define MAX_LIGHTS 16
+uniform mat4 uModel;
+uniform mat4 uView;
+uniform mat4 uProjection;
+uniform mat4 uLightVP;
+uniform mat3 uNormalMatrix;
 
-        varying vec3 vNormal;
-        varying vec3 vFragPos;
-        varying vec2 vTexCoord;
-        varying vec4 vShadowPos;
+out vec4 vShadowPos;
+out vec3 vNormal;
+out vec3 vFragPos;
+out vec2 vTexCoord;
 
-        uniform sampler2D uTexture;
-        uniform bool      uUseTexture;
+void main() {
+  vec4 worldPos = uModel * vec4(aVertexPosition, 1.0);
+  vFragPos      = worldPos.xyz;
+  vNormal       = normalize(uNormalMatrix * aVertexNormal);
+  vTexCoord     = aTexCoord;
+  vShadowPos    = uLightVP * worldPos;
+  gl_Position   = uProjection * uView * worldPos;
+}
+`;
 
-        uniform vec3  uViewPos;
-        uniform vec3  uSpecularColor;
-        uniform float uShininess;
+export const fragmentShaderSrc = `#version 300 es
+precision highp float;
 
-        uniform sampler2D uShadowTex;
+#define MAX_LIGHTS 16
 
-        uniform int   uLightCount;
-        uniform vec3  uLightPositions[MAX_LIGHTS];
-        uniform vec3  uLightColors[MAX_LIGHTS]; // ← можно добавить поддержку цвета
+in vec3 vNormal;
+in vec3 vFragPos;
+in vec2 vTexCoord;
+in vec4 vShadowPos;
 
-        void main () {
-        vec3 norm    = normalize(vNormal);
-        vec3 viewDir = normalize(uViewPos - vFragPos);
+uniform sampler2D uTexture;
+uniform bool uUseTexture;
+uniform sampler2D uShadowTex;
 
-        vec4 texColor = uUseTexture
-                        ? texture2D(uTexture, vTexCoord)
-                        : vec4(1.0);  // ← белый, умножается на lightColor
+uniform vec3  uViewPos;
+uniform vec3  uSpecularColor;
+uniform float uShininess;
 
-        // ------- Shadow (от первого источника) -------
-        float visibility = 1.0;
-        vec3  proj = vShadowPos.xyz / vShadowPos.w;
-        proj = proj * 0.5 + 0.5;
-        float closest = texture2D(uShadowTex, proj.xy).r;
-        if (proj.z - 0.005 > closest) visibility = 0.4;
+uniform int uLightCount;
+uniform vec3 uLightPositions[MAX_LIGHTS];
+uniform vec3 uLightColors[MAX_LIGHTS];
 
-        // ------- Accumulated Lighting -------
-        vec3 ambient = vec3(0.1);
-        vec3 diffuse = vec3(0.0);
-        vec3 specular = vec3(0.0);
+out vec4 fragColor;
 
-        for (int i = 0; i < MAX_LIGHTS; i++) {
-            if (i >= uLightCount) break;
+void main() {
+  vec3 norm = normalize(vNormal);
+  vec3 viewDir = normalize(uViewPos - vFragPos);
 
-            vec3 lightDir = normalize(uLightPositions[i] - vFragPos);
-            float diff = max(dot(norm, lightDir), 0.0);
+  vec4 texColor = uUseTexture
+                  ? texture(uTexture, vTexCoord)
+                  : vec4(1.0);
 
-            vec3 reflectDir = reflect(-lightDir, norm);
-            float spec = pow(max(dot(viewDir, reflectDir), 0.0), uShininess);
+  // --------- SHADOW ---------
+  float visibility = 1.0;
+  vec3 projCoords = vShadowPos.xyz / vShadowPos.w;
+  projCoords = projCoords * 0.5 + 0.5;
 
-            diffuse  += diff * uLightColors[i];
-            specular += spec * uSpecularColor * uLightColors[i];
-        }
+  float closestDepth = texture(uShadowTex, projCoords.xy).r;
+  float currentDepth = projCoords.z;
 
-        vec3 finalColor = (ambient + visibility * diffuse) * texColor.rgb
-                        + visibility * specular;
+  // простое сравнение с небольшим bias
+  if (currentDepth - 0.005 > closestDepth) {
+    visibility = 0.4;
+  }
 
-        gl_FragColor = vec4(finalColor, texColor.a);
-        }
-   `;
-   
+  // --------- LIGHTING ---------
+  vec3 ambient = vec3(0.1);
+  vec3 diffuse = vec3(0.0);
+  vec3 specular = vec3(0.0);
+
+  for (int i = 0; i < MAX_LIGHTS; i++) {
+    if (i >= uLightCount) break;
+
+    vec3 lightDir = normalize(uLightPositions[i] - vFragPos);
+    float diff = max(dot(norm, lightDir), 0.0);
+
+    vec3 reflectDir = reflect(-lightDir, norm);
+    float spec = pow(max(dot(viewDir, reflectDir), 0.0), uShininess);
+
+    diffuse  += diff * uLightColors[i];
+    specular += spec * uSpecularColor * uLightColors[i];
+  }
+
+  vec3 finalColor = (ambient + visibility * diffuse) * texColor.rgb
+                  + visibility * specular;
+
+  fragColor = vec4(finalColor, texColor.a);
+}
+`;

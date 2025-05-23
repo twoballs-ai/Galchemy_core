@@ -13,7 +13,7 @@ import { initShadowMap, initDepthProgram, calcLightVP } from "./internal/ShadowU
 import { drawCameraFrustum } from './helpers/FrustumHelper.js';
 import { AXIS_X_COLOR, AXIS_Y_COLOR, AXIS_Z_COLOR } from "../constants/CoordSystem.js";
 import { COORD } from "../core/CoordinateSystem";
-import { drawGizmoScreen } from "./helpers/GizmoScreen.js";
+import { drawGizmoScreen } from "./helpers/drawGizmoScreen.ts";
 import { Shader } from "./internal/Shader";
 import { Skybox } from "../GameObjects/SkyBox.ts";
 import { DaylightBoxPaths } from "../assets/skyBoxes/DaylightBox";
@@ -190,145 +190,140 @@ export class WebGLRenderer extends Renderer {
   clear(): void {
     this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
   }
-  render(scene: Scene, helpers = false): void {
-    const gl = this.gl;
-  
-    // 1) Очистка буфера
-    this.clear();
-    this.skybox.render(
-      this.activeCamera.getView(),
-      this.activeCamera.getProjection()
-    );
-    // 2) Подготовка шейдера
-    this.defaultShader.use();
-    const eye = this.activeCamera.position;
-    gl.uniform3fv(this.uViewPos, eye);
-  
-    // 3) Собираем все источники света (ограничим до 16)
-    const lights = scene.objects.filter(o => o.isLight).slice(0, 16);
-  
-    // 4) Shadow map — только от первого света (если есть)
-    let lightVP: mat4 | null = null;
-    if (lights.length > 0) {
-      const mainLight = lights[0];
-      lightVP = calcLightVP(mainLight);
-  
-      gl.bindFramebuffer(gl.FRAMEBUFFER, this.shadowFBO);
-      gl.viewport(0, 0, 2048, 2048);
-      gl.clear(gl.DEPTH_BUFFER_BIT);
-  
-      gl.useProgram(this.depthProgram);
-      gl.uniformMatrix4fv(this.uDepthLightVP, false, lightVP);
-  
-      for (const o of scene.objects) {
-        if (typeof o.renderWebGL3D === 'function') {
-          o.renderWebGL3D(gl, this.depthProgram, this.uDepthModel, null, null, null);
-        }
-      }
-  
-      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-    }
-  
-    // 5) Основной рендеринг
-    gl.viewport(0, 0, this.canvas.width, this.canvas.height);
-    this.defaultShader.use();
-  
-    if (lightVP) {
-      gl.activeTexture(gl.TEXTURE1);
-      gl.bindTexture(gl.TEXTURE_2D, this.shadowTex);
-      gl.uniform1i(gl.getUniformLocation(this.shaderProgram, 'uShadowTex'), 1);
-      gl.uniformMatrix4fv(gl.getUniformLocation(this.shaderProgram, 'uLightVP'), false, lightVP);
-    }
-  
-    // Передаём массив источников в шейдер
-    const MAX_LIGHTS = 16;
-    const lightPositions = new Float32Array(3 * MAX_LIGHTS);
-    const lightColors    = new Float32Array(3 * MAX_LIGHTS);
-    
-    lights.forEach((l, i) => {
-      const [x, y, z] = l.worldPosition;
-      const [r, g, b] = l.color.slice(0, 3);
-      const intensity = typeof l.intensity === "number" ? l.intensity : 1.0;
-      lightPositions.set([x, y, z], i * 3);
-      lightColors.set([r * intensity, g * intensity, b * intensity], i * 3);
-    });
-      if (lights.length > 0) {
-        const uLightPositionsLoc = gl.getUniformLocation(this.shaderProgram, 'uLightPositions');
-        if (uLightPositionsLoc !== null) {
-          gl.uniform3fv(uLightPositionsLoc, lightPositions);
-        }
-        const uLightColorsLoc = gl.getUniformLocation(this.shaderProgram, 'uLightColors');
-      
-        if (uLightPositionsLoc && uLightColorsLoc) {
-          gl.uniform1i(gl.getUniformLocation(this.shaderProgram, 'uLightCount'), lights.length);
-          gl.uniform3fv(uLightPositionsLoc, lightPositions);
-          gl.uniform3fv(uLightColorsLoc, lightColors);
-        }
-      }
-  
-    // Материальные свойства
-    gl.uniform3fv(this.uSpecularColor, [1, 1, 1]);
-    gl.uniform1f(this.uShininess, 32.0);
-    gl.disableVertexAttribArray(this.aTexCoord);
-  
-    this.activeCamera.update();
-    gl.uniformMatrix4fv(this.uView, false, this.activeCamera.getView());
-    gl.uniformMatrix4fv(this.uProj, false, this.activeCamera.getProjection());
-  
-    // 6) Основные 3D-объекты
-    for (const o of scene.objects) {
-      if (typeof o.renderWebGL3D === "function") {
-        o.renderWebGL3D(
-          gl,
-          this.shaderProgram,
-          this.uModel,
-          this.uAmbientColor,
-          this.uUseTexture,
-          this.uNormalMatrix
-        );
-  
-        if (o === this.core?.scene.selectedObject) {
-          drawMeshOutline({
-            gl,
-            mesh: o.mesh,
-            vertexBuffer: o.vertexBuffer,
-            uniforms: {
-              uUseTexture: this.uUseTexture,
-              uColor: this.uColor
-            },
-            attribs: {
-              aPos: this.aPos,
-              aTexCoord: this.aTexCoord
-            },
-            state: o
-          });
-        }
-      }
-    }
-  
-    // 7) Помощники (сетка, гизмо, фрустум)
-    if (helpers) {
-      drawGrid(this);
-      drawGizmo(this);        // центральное
+render(scene: Scene, helpers = false): void {
+  const gl = this.gl;
 
-      for (const o of scene.objects) {
-        if ((o as any).isCamera && o.camera) {
-          drawCameraFrustum(gl, this._drawLines.bind(this), o.camera);
-        }
-      }
-    }
-  
-    // 8) Спрайты
+  // 1) Очистка буфера
+  this.clear();
+  this.skybox.render(
+    this.activeCamera.getView(),
+    this.activeCamera.getProjection()
+  );
+
+  // 2) Подготовка шейдера
+  this.defaultShader.use();
+  const eye = this.activeCamera.position;
+  gl.uniform3fv(this.uViewPos, eye);
+
+  // 3) Источники света (до 16)
+  const lights = scene.objects.filter(o => o.isLight).slice(0, 16);
+
+  // 4) Shadow map
+  let lightVP: mat4 | null = null;
+  if (lights.length > 0) {
+    const mainLight = lights[0];
+    lightVP = calcLightVP(mainLight);
+
+    gl.bindFramebuffer(gl.FRAMEBUFFER, this.shadowFBO);
+    gl.viewport(0, 0, 2048, 2048);
+    gl.clear(gl.DEPTH_BUFFER_BIT);
+
+    gl.useProgram(this.depthProgram);
+    gl.uniformMatrix4fv(this.uDepthLightVP, false, lightVP);
+
     for (const o of scene.objects) {
-      if (typeof o.renderWebGL2D === "function") {
-        o.renderWebGL2D(this.spriteRenderer);
+      if (typeof o.renderWebGL3D === 'function') {
+        o.renderWebGL3D(gl, this.depthProgram, this.uDepthModel, null, null, null);
       }
     }
-  
-    this.transformGizmo.draw(this);
-    this.spriteRenderer.flush();
+
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
   }
 
+  // 5) Основной рендеринг
+  gl.viewport(0, 0, this.canvas.width, this.canvas.height);
+  this.defaultShader.use();
+
+  if (lightVP) {
+    gl.activeTexture(gl.TEXTURE1);
+    gl.bindTexture(gl.TEXTURE_2D, this.shadowTex);
+    gl.uniform1i(gl.getUniformLocation(this.shaderProgram, 'uShadowTex'), 1);
+    gl.uniformMatrix4fv(gl.getUniformLocation(this.shaderProgram, 'uLightVP'), false, lightVP);
+  }
+
+  const MAX_LIGHTS = 16;
+const lightPositions = new Float32Array(3 * MAX_LIGHTS);
+const lightColors = new Float32Array(3 * MAX_LIGHTS);
+lights.forEach((l, i) => {
+  const [x, y, z] = l.worldPosition;
+  const [r, g, b] = l.color.slice(0, 3);
+  const intensity = typeof l.intensity === "number" ? l.intensity : 1.0;
+  lightPositions.set([x, y, z], i * 3);
+  lightColors.set([r * intensity, g * intensity, b * intensity], i * 3);
+});
+
+  if (lights.length > 0) {
+    const uLightPositionsLoc = gl.getUniformLocation(this.shaderProgram, 'uLightPositions');
+    const uLightColorsLoc = gl.getUniformLocation(this.shaderProgram, 'uLightColors');
+    if (uLightPositionsLoc && uLightColorsLoc) {
+      gl.uniform1i(gl.getUniformLocation(this.shaderProgram, 'uLightCount'), lights.length);
+      gl.uniform3fv(uLightPositionsLoc, lightPositions);
+      gl.uniform3fv(uLightColorsLoc, lightColors);
+    }
+  }
+
+  gl.uniform3fv(this.uSpecularColor, [1, 1, 1]);
+  gl.uniform1f(this.uShininess, 32.0);
+  gl.disableVertexAttribArray(this.aTexCoord);
+
+  this.activeCamera.update();
+  gl.uniformMatrix4fv(this.uView, false, this.activeCamera.getView());
+  gl.uniformMatrix4fv(this.uProj, false, this.activeCamera.getProjection());
+
+  // 6) Основные объекты
+  for (const o of scene.objects) {
+    if (typeof o.renderWebGL3D === "function") {
+      o.renderWebGL3D(
+        gl,
+        this.shaderProgram,
+        this.uModel,
+        this.uAmbientColor,
+        this.uUseTexture,
+        this.uNormalMatrix
+      );
+      if (o === this.core?.scene.selectedObject) {
+        drawMeshOutline({
+          gl,
+          mesh: o.mesh,
+          vertexBuffer: o.vertexBuffer,
+          uniforms: {
+            uUseTexture: this.uUseTexture,
+            uColor: this.uColor
+          },
+          attribs: {
+            aPos: this.aPos,
+            aTexCoord: this.aTexCoord
+          },
+          state: o
+        });
+      }
+    }
+  }
+
+  // 7) Помощники
+  if (helpers) {
+    drawGrid(this);
+    drawGizmo(this);
+    for (const o of scene.objects) {
+      if ((o as any).isCamera && o.camera) {
+        drawCameraFrustum(gl, this._drawLines.bind(this), o.camera);
+      }
+    }
+  }
+
+  // 8) Спрайты
+  for (const o of scene.objects) {
+    if (typeof o.renderWebGL2D === "function") {
+      o.renderWebGL2D(this.spriteRenderer);
+    }
+  }
+
+  // 9) Трансформ-гизмо
+  this.transformGizmo.draw(this);
+  this.spriteRenderer.flush();
+
+
+}
   resize(w: number, h: number): void {
     this.gl.viewport(0, 0, w, h);
     this._setupProjection();

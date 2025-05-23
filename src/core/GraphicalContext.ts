@@ -1,6 +1,6 @@
 // src/core/GraphicalContext.js
 import { WebGLRenderer } from '../Renderer/WebGLRenderer.js';
-import { ColorMixin }    from '../utils/ColorMixin.js';
+import { ColorMixin }    from '../utils/ColorMixin.ts';
 
 export class GraphicalContext {
   constructor(canvasId, background = '#000', width = 800, height = 600) {

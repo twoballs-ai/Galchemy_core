@@ -41,45 +41,45 @@ export class EditorControls {
   }
 
   private _onMouseDown = (e: MouseEvent) => {
-  const { canvas } = this.core;
+    const { canvas } = this.core;
 
-  if (e.button === 0 && !e.shiftKey) {
-    const pick = this._pickObject(e);
-    if (pick) {
-      this.selectedObject = pick.obj;
-       this.core.scene.selectedObject = pick.obj;     // для доступа из Scene
- this.core.setSelectedObject?.(pick.obj);  
-      const off: [number, number, number] = [
-        pick.pickPoint[0] - pick.obj.position[0],
-        pick.pickPoint[1] - pick.obj.position[1],
-        pick.pickPoint[2] - pick.obj.position[2]
-      ];
-      this.dragObjectInfo = { obj: pick.obj, offset: off };
+    if (e.button === 0 && !e.shiftKey) {
+      const pick = this._pickObject(e);
+      if (pick) {
+        this.selectedObject = pick.obj;
+        this.core.scene.selectedObject = pick.obj;
+        this.core.setSelectedObject?.(pick.obj);
+        const off: [number, number, number] = [
+          pick.pickPoint[0] - pick.obj.position[0],
+          pick.pickPoint[1] - pick.obj.position[1],
+          pick.pickPoint[2] - pick.obj.position[2]
+        ];
+        this.dragObjectInfo = { obj: pick.obj, offset: off };
 
-      // Эмитим событие выбора объекта
-      this.core.emitter.emit("objectSelected", {
-        id: pick.obj.id,
-        name: pick.obj.name ?? '',
-        type: pick.obj.type,
-        position: pick.obj.position.slice(),
-      });
+        // Эмитим событие выбора объекта
+        this.core.emitter.emit("objectSelected", {
+          id: pick.obj.id,
+          name: pick.obj.name ?? '',
+          type: pick.obj.type,
+          position: pick.obj.position.slice(),
+        });
 
+        return;
+      }
+
+      // Если объект не выбран, сбрасываем выбор
+      this.selectedObject = null;
+      this.core.scene.selectedObject = null;
+      this.core.setSelectedObject?.(null);
+      this.core.emitter.emit("objectSelected", null);
+      this.dragCameraInfo = { mode: "orbit", x: e.clientX, y: e.clientY };
       return;
     }
 
-    // Если объект не выбран, сбрасываем выбор
-    this.selectedObject           = null; 
-    this.core.scene.selectedObject = null; 
-    this.core.setSelectedObject?.(null);
-    this.core.emitter.emit("objectSelected", null);
-    this.dragCameraInfo = { mode: "orbit", x: e.clientX, y: e.clientY };
-    return;
-  }
-
-  if ((e.button === 0 && e.shiftKey) || e.button === 2) {
-    this.dragCameraInfo = { mode: "pan", x: e.clientX, y: e.clientY };
-  }
-};
+    if ((e.button === 0 && e.shiftKey) || e.button === 2) {
+      this.dragCameraInfo = { mode: "pan", x: e.clientX, y: e.clientY };
+    }
+  };
 
   private _onMouseMove = (e: MouseEvent) => {
     const camera = this.core.camera as any;
@@ -110,8 +110,9 @@ export class EditorControls {
         camera.pitch = Math.max(-1.55, Math.min(1.55, camera.pitch));
       } else if (this.dragCameraInfo.mode === "pan") {
         const panSpeed = 0.01 * camera.distance;
-        camera.target[0] -= (Math.cos(camera.yaw) * dx - Math.sin(camera.yaw) * dy) * panSpeed;
-        camera.target[2] -= (Math.sin(camera.yaw) * dx + Math.cos(camera.yaw) * dy) * panSpeed;
+        // --- Y-up стиль: pan по X и Z! (Y — вертикаль)
+        camera.target[0] -= dx * panSpeed; // X — вправо/влево
+        camera.target[2] += dy * panSpeed; // Z — вперёд/назад
       }
 
       this.dragCameraInfo.x = e.clientX;
@@ -135,10 +136,13 @@ export class EditorControls {
     const camera = this.core.camera as any;
     const speed = 0.1 * camera.distance;
     switch (e.key.toLowerCase()) {
-      case "w": case "arrowup":    camera.target[2] -= speed; break;
-      case "s": case "arrowdown":  camera.target[2] += speed; break;
-      case "a": case "arrowleft":  camera.target[0] -= speed; break;
-      case "d": case "arrowright": camera.target[0] += speed; break;
+      case "w": case "arrowup":    camera.target[2] -= speed; break; // Вперёд по Z
+      case "s": case "arrowdown":  camera.target[2] += speed; break; // Назад по Z
+      case "a": case "arrowleft":  camera.target[0] -= speed; break; // Влево по X
+      case "d": case "arrowright": camera.target[0] += speed; break; // Вправо по X
+      // --- (не обязательно) Q/E для подъёма/опускания по Y:
+      case "q": camera.target[1] += speed; break; // Вверх по Y
+      case "e": camera.target[1] -= speed; break; // Вниз по Y
     }
   };
 

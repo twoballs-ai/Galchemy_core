@@ -1,4 +1,4 @@
-import { BaseMode } from './BaseMode.js';
+import { BaseMode } from './BaseMode.ts';
 import { EditorCamera } from '../cameras/EditorCamera.ts';
 import { EditorControls } from '../controls/EditorControls.ts';
 // import { SelectionOutline2D } from '../Renderer/helpers/SelectionOutline2D.js'; // 🔧 путь и имя
@@ -38,7 +38,8 @@ export class EditorMode extends BaseMode {
     // );
   }
 
-  resize(width: number, height: number) {
-    // this.selectionOutline.resize(width, height);
-  }
+resize(width: number, height: number) {
+  this.camera?.resize(width, height);
+  // this.selectionOutline?.resize(width, height);
+}
 }

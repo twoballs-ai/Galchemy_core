@@ -1,4 +1,3 @@
-// src/helpers/GridHelper.ts
 import { drawLines } from '../internal/drawLines.js';
 import { COORD } from '../../core/CoordinateSystem.js';
 
@@ -13,22 +12,22 @@ export function drawGrid(ctx: any) {
 
   const size = 500;
   const A = COORD.RIGHT;    // первая базисная ось (X)
-  const B = COORD.FORWARD;  // вторая базисная ось (Y или Z, в зависимости от UP_AXIS)
+  const B = COORD.FORWARD;  // вторая базисная ось (Z)
 
   const gridLines: number[] = [];
-  const xAxis: number[]   = [];
-  const yAxis: number[]   = [];
+  const xAxis: number[] = [];
+  const zAxis: number[] = [];
 
   for (let i = -size; i <= size; i += gridStep) {
     if (i === 0) {
       // главные оси от -size до +size вдоль A и B
       xAxis.push(
-        0, 0, 0,
-        A[0] * size, A[1] * size, A[2] * size
+        A[0] * -size, A[1] * -size, A[2] * -size,
+        A[0] *  size, A[1] *  size, A[2] *  size
       );
-      yAxis.push(
-        0, 0, 0,
-        B[0] * size, B[1] * size, B[2] * size
+      zAxis.push(
+        B[0] * -size, B[1] * -size, B[2] * -size,
+        B[0] *  size, B[1] *  size, B[2] *  size
       );
     } else {
       // линия параллельно A, смещённая вдоль B на i
@@ -55,27 +54,9 @@ export function drawGrid(ctx: any) {
   }
 
   // Основные линии сетки (серые)
-  drawLines(
-    gl,
-    -1, null!,
-    new Float32Array(gridLines),
-    [0.4, 0.4, 0.4, 1],
-    ctx
-  );
+  drawLines(gl, -1, null!, new Float32Array(gridLines), [0.4, 0.4, 0.4, 1], ctx);
 
   // Оси
-  drawLines(
-    gl,
-    -1, null!,
-    new Float32Array(xAxis),
-    COORD.AXIS_X_COLOR,
-    ctx
-  );
-  drawLines(
-    gl,
-    -1, null!,
-    new Float32Array(yAxis),
-    COORD.AXIS_Y_COLOR,
-    ctx
-  );
+  drawLines(gl, -1, null!, new Float32Array(xAxis), COORD.AXIS_X_COLOR, ctx);
+  drawLines(gl, -1, null!, new Float32Array(zAxis), COORD.AXIS_Z_COLOR, ctx);
 }
