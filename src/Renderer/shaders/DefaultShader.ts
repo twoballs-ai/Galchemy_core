@@ -66,8 +66,8 @@ void main() {
   float closestDepth = texture(uShadowTex, projCoords.xy).r;
   float currentDepth = projCoords.z;
 
-  // простое сравнение с небольшим bias
-  if (currentDepth - 0.005 > closestDepth) {
+  float bias = 0.005;  // упрощенный bias
+  if (currentDepth - bias > closestDepth) {
     visibility = 0.4;
   }
 

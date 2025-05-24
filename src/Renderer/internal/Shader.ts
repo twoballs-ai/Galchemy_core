@@ -29,24 +29,34 @@ export class Shader {
   /* ---------- factory helpers ---------- */
 
   /** Скомпилировать из двух строк GLSL */
-  static fromSource(
-    gl: WebGL2RenderingContext,
-    vsSrc: string,
-    fsSrc: string
-  ) {
-    const compile = (type: number, src: string) => {
-      const s = gl.createShader(type)!;
-      gl.shaderSource(s, src);
-      gl.compileShader(s);
-      return s;
-    };
+static fromSource(gl: WebGL2RenderingContext, vsSrc: string, fsSrc: string) {
+  const compile = (type: number, src: string) => {
+    const s = gl.createShader(type)!;
+    gl.shaderSource(s, src);
+    gl.compileShader(s);
 
-    const vs = compile(gl.VERTEX_SHADER, vsSrc);
-    const fs = compile(gl.FRAGMENT_SHADER, fsSrc);
-    const prog = gl.createProgram()!;
-    gl.attachShader(prog, vs);
-    gl.attachShader(prog, fs);
-    gl.linkProgram(prog);
-    return new Shader(gl, prog);
+    if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) {
+      const log = gl.getShaderInfoLog(s);
+      console.error("Shader compile error:", log);
+      throw new Error("Shader compile failed: " + log);
+    }
+    return s;
+  };
+
+  const vs = compile(gl.VERTEX_SHADER, vsSrc);
+  const fs = compile(gl.FRAGMENT_SHADER, fsSrc);
+
+  const prog = gl.createProgram()!;
+  gl.attachShader(prog, vs);
+  gl.attachShader(prog, fs);
+  gl.linkProgram(prog);
+
+  if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) {
+    const log = gl.getProgramInfoLog(prog);
+    console.error("Program link error:", log);
+    throw new Error("Program linking failed: " + log);
   }
+
+  return new Shader(gl, prog);
+}
 }
