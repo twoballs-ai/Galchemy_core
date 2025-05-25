@@ -80,12 +80,11 @@ export function createTerrainGeometry({
     const v2 = positions.slice(i2, i2 + 3) as [number,number,number];
 
     // нормаль = (v1 - v0) × (v2 - v0)
-    const ux = v1[0] - v0[0], uy = v1[1] - v0[1], uz = v1[2] - v0[2];
-    const vx = v2[0] - v0[0], vy = v2[1] - v0[1], vz = v2[2] - v0[2];
-    const nx = uy * vz - uz * vy;
-    const ny = uz * vx - ux * vz;
-    const nz = ux * vy - uy * vx;
-
+   const ux = v2[0] - v0[0], uy = v2[1] - v0[1], uz = v2[2] - v0[2];
+   const vx = v1[0] - v0[0], vy = v1[1] - v0[1], vz = v1[2] - v0[2];
+   const nx = uy * vz - uz * vy;   // новая ориентация даёт нормаль вверх
+   const ny = uz * vx - ux * vz;
+   const nz = ux * vy - uy * vx;
     // аккумулируем
     normals[i0 + 0] += nx; normals[i0 + 1] += ny; normals[i0 + 2] += nz;
     normals[i1 + 0] += nx; normals[i1 + 1] += ny; normals[i1 + 2] += nz;
