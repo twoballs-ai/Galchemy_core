@@ -1,10 +1,12 @@
 import { vec3 } from '../../vendor/gl-matrix/index.js';
 import type { CameraInterface } from '../../types/RendererTypes.js';
 import { COORD } from '../../core/CoordinateSystem.ts';
+import { drawLines } from '../internal/drawLines.js'; // путь укажи свой
+import type { WebGLRenderer } from '../renderers/WebGLRenderer.js';
 
 export function drawCameraFrustum(
-  gl: WebGLRenderingContext,
-  drawLines: (v: Float32Array, color: [number, number, number, number]) => void,
+  gl: WebGL2RenderingContext,
+  ctx: WebGLRenderer,
   cam: CameraInterface
 ) {
   const pos = cam.position;
@@ -41,5 +43,12 @@ export function drawCameraFrustum(
     ...ftl, ...ftr, ...ftr, ...fbr, ...fbr, ...fbl, ...fbl, ...ftl
   ]);
 
-  drawLines(lines, COORD.AXIS_Z_COLOR);
+  drawLines(
+    gl,
+    ctx.plain_aPos,
+    ctx.plain_uColor,
+    lines,
+    COORD.AXIS_Z_COLOR,
+    ctx // передаём WebGLRenderer как ctx
+  );
 }

@@ -1,17 +1,32 @@
 // core/PrimitiveFactory.js
-import { GameObject3D }            from './primitives/GameObject3D.js';
-import { createSphereGeometry }    from './primitives/3dPrimitives/createSphereGeometry.js';
-import { createCubeGeometry }      from './primitives/3dPrimitives/createCubeGeometry.js';
-import { createCylinderGeometry }  from './primitives/3dPrimitives/createCylinderGeometry.js';
-import { createTerrainGeometry } from './primitives/3dPrimitives/createTerrainGeometry.js'
-import { GameObjectCamera } from './GameObjectCamera.js';
-import { GameObjectLight } from './GameObjectLight.js';
+import { GameObject3D }            from './primitives/GameObject3D.ts';
+import { createSphereGeometry }    from './primitives/3dPrimitives/createSphereGeometry.ts';
+import { createCubeGeometry }      from './primitives/3dPrimitives/createCubeGeometry.ts';
+import { createCylinderGeometry }  from './primitives/3dPrimitives/createCylinderGeometry.ts';
+import { createTerrainGeometry } from './primitives/3dPrimitives/createTerrainGeometry.ts'
+import { GameObjectCamera } from './GameObjectCamera.ts';
+import { GameObjectLight } from './GameObjectLight.ts';
 import defaultTextureSrc           from '../assets/Metal052C_1K-JPG/Metal052C_1K-JPG_Color.jpg';  // добавили!
-import { GameObjectCharacter } from './GameObjectCharacter.js';
+import { GameObjectCharacter } from './GameObjectCharacter.ts';
 import { GameObjectSpawnPoint } from './GameObjectSpawnPoint.js';
-import { COORD } from '../core/CoordinateSystem.js';
+import { COORD } from '../core/CoordinateSystem.ts';
+// ── камеры ─────────────────────────────────────────────────────────
+import { GameCamera }        from '../core/cameras/GameCamera.ts';
+import { FirstPersonCamera } from '../core/cameras/FirstPersonCamera.ts';
+import { ThirdPersonCamera } from '../core/cameras/ThirdPersonCamera.ts';
+import { TopDownCamera }     from '../core/cameras/TopDownCamera.ts';
 const DEFAULT_PRIMITIVE_COLOR = '#7f7f7f';
 const DEFAULT_DISTANCE = 5;
+type CameraSubtype = 'game' | 'first' | 'third' | 'topdown';
+
+/** Опции, передаваемые при создании объекта-камеры. */
+interface CameraOpts {
+  /** Подтип камеры, влияет на то, какой класс будет создан. */
+  subtype?: CameraSubtype;
+  /** Любые другие настройки камеры или GameObjectCamera
+   *  (position, fov, near, far, color, iconSize …). */
+  [key: string]: unknown;
+}
 
 // хелпер для позиции «направо-назад» от цели
 function defaultPosition(distance = DEFAULT_DISTANCE) {
@@ -104,9 +119,25 @@ primitiveFactory.register(
     });
   }
 );
+
 primitiveFactory.register(
   'camera',
-  (gl, opts) => new GameObjectCamera(gl, opts)
+  (gl: WebGL2RenderingContext, opts: CameraOpts = {}) => {
+    const subtype: CameraSubtype = opts.subtype ?? 'game';
+
+    /* Таблица «подтип → класс»; as const фиксирует типы ключей. */
+    const cameraMap = {
+      game   : GameCamera,
+      first  : FirstPersonCamera,
+      third  : ThirdPersonCamera,
+      topdown: TopDownCamera,
+    } as const satisfies Record<CameraSubtype, new (...args: any[]) => any>;
+
+    /* Теперь subtype гарантированно совместим с ключами cameraMap. */
+    const CameraClass = cameraMap[subtype];
+
+    return new GameObjectCamera(gl, { ...opts, cameraClass: CameraClass });
+  }
 );
 primitiveFactory.register(
   'terrain',

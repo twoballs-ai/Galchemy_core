@@ -306,7 +306,7 @@ lights.forEach((l, i) => {
     drawGizmo(this);
     for (const o of scene.objects) {
       if ((o as any).isCamera && o.camera) {
-        drawCameraFrustum(gl, this._drawLines.bind(this), o.camera);
+        drawCameraFrustum(this.gl, this, o.camera);
       }
     }
   }

@@ -18,7 +18,8 @@ export class Scene implements IScene {
 
   add(obj: IGameObject) {
     this.objects.push(obj);
-    if (obj.isCamera && !this.activeCamera) {
+    // only auto-activate if NOT in editor
+    if (obj.isCamera && !this.activeCamera && !this.core.showHelpers) {
       this.setActiveCamera(obj as ICamera);
     }
     this.emitter.emit('objectAdded', { scene: this.name, object: obj });

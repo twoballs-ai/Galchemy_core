@@ -2,6 +2,7 @@ import { mat4 } from '../../vendor/gl-matrix/index.js';
 import { COORD } from "../../core/CoordinateSystem";
 import { UP } from '../../constants/CoordSystem.ts';  // добавим импорт
 
+import { vec3 } from '../../vendor/gl-matrix/index.js';
 export class BaseCamera {
   constructor(w, h) {
     this.width  = w;

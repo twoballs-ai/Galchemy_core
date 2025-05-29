@@ -9,21 +9,21 @@ export class EditorMode extends BaseMode {
   private controls!: EditorControls;
   // private selectionOutline!: SelectionOutline2D;
 
-  enter(core: Core) {
-    super.enter(core);
-    this.core = core;
+enter(core: Core) {
+  super.enter(core);
+  this.core = core;
 
-    core.setShowHelpers(true);
-    core.setDebugLogging(true);
+  core.setShowHelpers(true);
+  core.setDebugLogging(true);
 
-    const editorCamera = new EditorCamera(core.canvas.width, core.canvas.height);
-    core.setActiveCamera(editorCamera);
+  // --- всегда EditorCamera ---
+  const editorCamera = new EditorCamera(core.canvas.width, core.canvas.height);
+  core.setActiveCamera(editorCamera);
 
-    core.scene.objects.forEach(o => { o.isEditorMode = true; });
+  core.scene.objects.forEach(o => { o.isEditorMode = true; });
 
-    this.controls = new EditorControls(core);
-    // this.selectionOutline = new SelectionOutline2D(core.canvas);
-  }
+  this.controls = new EditorControls(core);
+}
 
   exit() {
     this.controls.dispose();
