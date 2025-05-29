@@ -48,7 +48,7 @@ export function drawCameraFrustum(
     ctx.plain_aPos,
     ctx.plain_uColor,
     lines,
-    COORD.AXIS_Z_COLOR,
+    [1, 1, 0, 1], 
     ctx // передаём WebGLRenderer как ctx
   );
 }
