@@ -1,29 +1,38 @@
-import { BaseMode } from './BaseMode.ts';
-import { EditorCamera } from '../cameras/EditorCamera.ts';
+import { BaseMode }      from './BaseMode.ts';
+import { EditorCamera }  from '../cameras/EditorCamera.ts';
 import { EditorControls } from '../controls/EditorControls.ts';
-// import { SelectionOutline2D } from '../Renderer/helpers/SelectionOutline2D.js'; // 🔧 путь и имя
-import type { Core } from '../../types/CoreTypes';
+import type { Core }     from '../../types/CoreTypes';
 
 export class EditorMode extends BaseMode {
   private core!: Core;
+  private camera!: EditorCamera;          // хранит ссылку на редакторскую
   private controls!: EditorControls;
-  // private selectionOutline!: SelectionOutline2D;
 
-enter(core: Core) {
-  super.enter(core);
-  this.core = core;
+  enter(core: Core) {
+    super.enter(core);
+    this.core = core;
 
-  core.setShowHelpers(true);
-  core.setDebugLogging(true);
+    /* helpers / отладка */
+    core.setShowHelpers(true);
+    core.setDebugLogging(true);
 
-  // --- всегда EditorCamera ---
-  const editorCamera = new EditorCamera(core.canvas.width, core.canvas.height);
-  core.setActiveCamera(editorCamera);
+    /* ───────────── ❶ создаём и регистрируем EditorCamera ───────────── */
+    this.camera = new EditorCamera(core.canvas.width, core.canvas.height);
 
-  core.scene.objects.forEach(o => { o.isEditorMode = true; });
+    // сообщаем Core, что это «неприкосновенная» камера редактора
+    core._registerEditorCamera(this.camera);
 
-  this.controls = new EditorControls(core);
-}
+    // устанавливаем её активной принудительно (force = true)
+    core.setActiveCamera(this.camera, /* force */ true);
+
+    /* ---------------------------------------------------------------- */
+
+    /* пометки для объектов сцены */
+    core.scene.objects.forEach(o => { o.isEditorMode = true; });
+
+    /* Controls */
+    this.controls = new EditorControls(core);
+  }
 
   exit() {
     this.controls.dispose();
@@ -31,15 +40,9 @@ enter(core: Core) {
 
   update(dt: number) {
     this.core.renderer.selectedObject = this.controls.selectedObject;
-
-    // this.selectionOutline.draw(
-    //   this.core.camera,
-    //   this.controls.selectedObject
-    // );
   }
 
-resize(width: number, height: number) {
-  this.camera?.resize(width, height);
-  // this.selectionOutline?.resize(width, height);
-}
+  resize(w: number, h: number) {
+    this.camera.resize(w, h);
+  }
 }

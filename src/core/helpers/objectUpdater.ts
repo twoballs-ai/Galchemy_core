@@ -4,68 +4,109 @@ import { createCylinderGeometry } from '../../GameObjects/primitives/3dPrimitive
 import type { Core }              from '../Core.ts';
 
 /**
- * Лёгкий патч: меняем только поля (x/y/z/цвет и т. д.),
- * не трогая буферы WebGL. Быстро и дёшево.
+ * Применяет свойства к вложенной камере (если есть).
+ */
+function applyCameraProps(camera: any, props: Partial<any>) {
+  if (!camera) return;
+
+  if (props.fov !== undefined) camera.fov = props.fov;
+  if (props.near !== undefined) camera.near = props.near;
+  if (props.far !== undefined) camera.far = props.far;
+  if (props.orthoSize !== undefined) camera.orthoSize = props.orthoSize;
+  if (props.isOrthographic !== undefined) camera.isOrthographic = props.isOrthographic;
+  if (props.lookAt !== undefined) camera.lookAt = props.lookAt;
+
+  camera.updateProjection?.();
+  camera.update?.();
+}
+
+/**
+ * Лёгкий патч: обновляет свойства объекта (x/y/z, цвет и т. д.) без пересоздания геометрии.
  */
 export function patchObject(core: Core, id: string, props: Partial<any>) {
   const obj = core.scene.objects.find(o => o.id === id);
   if (!obj) return;
+
   Object.assign(obj, props);
+
+  if (obj.isCamera && obj.camera) {
+    applyCameraProps(obj.camera, props);
+  }
+
   core.renderer?.render(core.scene, core.debug);
 }
 
 /**
- * Полное обновление геометрии для примитивов, если изменился radius/size/height.
- * Заменяем VBO/IBO без пересоздания объекта.
+ * Обновление геометрии примитива при изменении ключевых параметров (например, радиус/размер).
+ * Если не требуется пересоздание геометрии — делегирует в patchObject.
  */
-export function updateGeometry(core: Core, id: string, type: string, props: any) {
+export function updateGeometry(core: Core, id: string, type: string, props: Partial<any>) {
   const obj = core.scene.objects.find(o => o.id === id);
   if (!obj) return;
 
-  const gl  = core.ctx;
-  let mesh  = null;
+  const gl = core.ctx;
+  let mesh = null;
 
   switch (type) {
     case 'sphere':
-      if (props.radius !== undefined)
-        mesh = createSphereGeometry(props.radius, props.segments ?? 24);
+      if (props.radius !== undefined || props.segments !== undefined) {
+        const r = props.radius ?? obj.radius;
+        const s = props.segments ?? obj.segments ?? 24;
+        mesh = createSphereGeometry(r, s);
+      }
       break;
 
     case 'cube':
-      if (props.size !== undefined)
-        mesh = createCubeGeometry(props.size);
+      if (
+        props.width !== undefined ||
+        props.height !== undefined ||
+        props.depth !== undefined
+      ) {
+        const w = props.width  ?? obj.width;
+        const h = props.height ?? obj.height;
+        const d = props.depth  ?? obj.depth;
+        mesh = createCubeGeometry(w, h, d);
+      }
       break;
 
     case 'cylinder':
-      if (props.radius !== undefined || props.height !== undefined)
-        mesh = createCylinderGeometry(
-          props.radius  ?? obj.radius,
-          props.height  ?? obj.height
-        );
+      if (props.radius !== undefined || props.height !== undefined) {
+        const r = props.radius ?? obj.radius;
+        const h = props.height ?? obj.height;
+        mesh = createCylinderGeometry(r, h);
+      }
       break;
   }
 
-  if (!mesh) {               // ничего не меняем
+  if (!mesh) {
     patchObject(core, id, props);
     return;
   }
 
-  // ── заливаем новые данные в существующие буферы ────────────────────
+  // обновляем буферы геометрии
   gl.bindBuffer(gl.ARRAY_BUFFER, obj.vertexBuffer);
   gl.bufferData(gl.ARRAY_BUFFER, mesh.positions, gl.STATIC_DRAW);
 
   gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, obj.indexBuffer);
-  gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, mesh.indices,  gl.STATIC_DRAW);
+  gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, mesh.indices, gl.STATIC_DRAW);
 
   if (mesh.texCoords && obj.texCoordBuffer) {
     gl.bindBuffer(gl.ARRAY_BUFFER, obj.texCoordBuffer);
     gl.bufferData(gl.ARRAY_BUFFER, mesh.texCoords, gl.STATIC_DRAW);
   }
 
-  obj.mesh        = mesh;
+  if (mesh.normals && obj.normalBuffer) {
+    gl.bindBuffer(gl.ARRAY_BUFFER, obj.normalBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, mesh.normals, gl.STATIC_DRAW);
+  }
+
+  obj.mesh = mesh;
   obj.vertexCount = mesh.indices.length;
-  // применяем остальные свойства
   Object.assign(obj, props);
+
+  if (obj.isCamera && obj.camera) {
+    applyCameraProps(obj.camera, props);
+  }
 
   core.renderer?.render(core.scene, core.debug);
 }

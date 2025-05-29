@@ -2,7 +2,7 @@ import { SceneManager } from './SceneManager';
 import { EventEmitter } from '../utils/EventEmitter';
 import { Physics } from './Physics';
 import { GraphicalContext } from './GraphicalContext';
-
+import { EditorMode } from './modes/EditorMode'; 
 import { CoreOptions, IMode, ICamera, IGameObject } from '../types/CoreTypes';
 
 export class Core {
@@ -20,6 +20,7 @@ export class Core {
   public showHelpers: boolean = false;
   public mode: IMode | null = null;
   public camera: ICamera | null = null;
+  private editorCamera!: ICamera; 
   private lastTime: number = 0;
   private _running: boolean = false;
 
@@ -77,9 +78,19 @@ export class Core {
     this.sceneManager.clearScene(sceneName);
   }
 
-  setActiveCamera(camera: ICamera) {
+  setActiveCamera(camera: ICamera, force = false) {
+    const inEditor = this.mode instanceof EditorMode;
+    if (inEditor && !force && camera !== this.editorCamera) {
+      // блокируем переключение, если не принудительно
+      return;
+    }
     this.camera = camera;
     this.renderer.setCamera(camera);
+  }
+
+  /** Вызывается EditorMode при создании редакторской камеры */
+  _registerEditorCamera(cam: ICamera) {
+    this.editorCamera = cam;
   }
 
   setSelectedObject(obj: IGameObject | null) {
@@ -108,7 +119,7 @@ addSceneObjects(sceneName: string, objs: any[], shapeFactory: any) {
     go.id = obj.id;
     if (this.showHelpers) go.isEditorMode = true;
 
-    if (go.isCamera) {
+    if (go.isCamera && !this.showHelpers) {   // только если НЕ редактор
       this.setActiveCamera(go);
     }
 
