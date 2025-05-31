@@ -1,19 +1,17 @@
 // src/GameFacade.js
 import { Core }           from './Core.ts';
-import { GameObject2D }   from '../GameObjects/primitives/GameObject2D.js';
-import { primitiveFactory } from '../GameObjects/PrimitiveFactory.js';   // ← фабрика
-
-import Entity             from '../GameObjects/EntityWrapper.js';
-import { getSize }        from '../utils/getSize.js';
+// import { GameObject2D }   from '../GameObjects/primitives/GameObject2D.js';
+import { primitiveFactory } from '../GameObjects/PrimitiveFactory.ts';   // ← фабрика
 
 import { loadGLB }        from '../utils/GLTFLoader.ts';
 
 import { EditorMode }     from './modes/EditorMode.ts';
 import { PreviewMode }    from './modes/PreviewMode.ts';
-import { patchObject, updateGeometry } from './helpers/objectUpdater.js';
+import { patchObject, updateGeometry } from './helpers/objectUpdater.ts';
+import { MaterialPreviewRenderer, MaterialMeta } from '../Renderer/MaterialPreviewRenderer.ts';
 
-export { GameObject3D }   from '../GameObjects/primitives/GameObject3D.js';
-export { primitiveFactory } from '../GameObjects/PrimitiveFactory.js';   // ре-экспорт
+export { GameObject3D }   from '../GameObjects/primitives/GameObject3D.ts';
+export { primitiveFactory } from '../GameObjects/PrimitiveFactory.ts';   // ре-экспорт
 
 class GameFacade {
   constructor() {
@@ -95,7 +93,18 @@ class GameFacade {
     return terrainObj;
   }
   /* «сахар»-методы ------------------------------------------- */
-
+  /** 
+   * Создать PBR-превью материала для GUI
+   * @param canvas - DOM-элемент, в котором отрисовывается превью
+   * @param materialAsset - AssetItem с meta-описанием материала
+   * @returns экземпляр MaterialPreviewRenderer
+   */
+  createMaterialPreview(canvas: HTMLCanvasElement, materialAsset: AssetItem): MaterialPreviewRenderer {
+    // Здесь можно брать meta/material.json, или вытаскивать через asset.meta
+    // Если нужно, можно тут же нормализовать пути (например, абсолютный путь к текстурам)
+    const meta: MaterialMeta = materialAsset.meta;
+    return new MaterialPreviewRenderer(canvas, meta);
+  }
 spawnSphere   (r=2, seg=24, pos=[0,-5,0], color='#fff') {
   return this.spawnPrimitive('sphere', { radius:r, segments:seg, position:pos, color });
 }
