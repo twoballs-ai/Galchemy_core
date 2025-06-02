@@ -54,8 +54,9 @@ export function createPBRShaderProgram(gl: WebGL2RenderingContext): WebGLProgram
       vec3 diffuse = (1.0 - metal) * baseColor / 3.1415;
       vec3 spec = NDF * G * F / max(4.0 * max(dot(N,V),0.01) * max(dot(N,L),0.01), 0.001);
 
-      vec3 color = (diffuse + spec) * NdotL + 0.09 * baseColor;
-      outColor = vec4(pow(color, vec3(1.0/2.2)), 1.0);
+      vec3 color    = (diffuse + spec) * NdotL;
+      vec3 ambient  = baseColor * 0.15;          // +15 % «окружающего» света
+      outColor = vec4( pow(color + ambient, vec3(1.0/2.2)), 1.0 );
     }`;
 
   function compile(src: string, type: number): WebGLShader {

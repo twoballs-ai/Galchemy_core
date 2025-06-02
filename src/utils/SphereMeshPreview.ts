@@ -1,16 +1,11 @@
-export interface SphereMesh {
-  vao: WebGLVertexArrayObject;
-  indexCount: number;
-  render: (gl: WebGL2RenderingContext, program: WebGLProgram) => void;
-}
-
 export function createSphereMesh(
   radius: number,
   segments: number,
   rings: number,
   gl: WebGL2RenderingContext
 ): SphereMesh {
-  // Простейшая UV-сфера
+  console.warn('[createSphereMesh] called with:', { radius, segments, rings });
+
   const positions: number[] = [];
   const normals: number[] = [];
   const uvs: number[] = [];
@@ -23,7 +18,7 @@ export function createSphereMesh(
       const theta = u * Math.PI * 2;
       const phi = v * Math.PI;
       const sx = Math.cos(theta) * Math.sin(phi);
-      const sy = Math.cos(phi - Math.PI / 2);
+      const sy = Math.sin(phi - Math.PI / 2); // <= критическая строчка!
       const sz = Math.sin(theta) * Math.sin(phi);
       positions.push(sx * radius, sy * radius, sz * radius);
       normals.push(sx, sy, sz);
@@ -37,6 +32,13 @@ export function createSphereMesh(
       indices.push(i + 1, i + segments + 2, i + segments + 1);
     }
   }
+
+  // Log part of geometry for анализа
+  console.warn('[createSphereMesh] Example positions:', positions.slice(0, 12));
+  console.warn('[createSphereMesh] Example normals:', normals.slice(0, 12));
+  console.warn('[createSphereMesh] Example uvs:', uvs.slice(0, 8));
+  console.warn('[createSphereMesh] Example indices:', indices.slice(0, 12));
+  console.warn('[createSphereMesh] Counts: positions:', positions.length / 3, 'indices:', indices.length);
 
   // VAO/VBO/IBO
   const vao = gl.createVertexArray()!;
@@ -74,6 +76,7 @@ export function createSphereMesh(
     vao,
     indexCount: indices.length,
     render: (gl: WebGL2RenderingContext, program: WebGLProgram) => {
+      console.warn('[SphereMesh] Drawing elements, vao:', vao, 'indexCount:', indices.length);
       gl.bindVertexArray(vao);
       gl.drawElements(gl.TRIANGLES, indices.length, gl.UNSIGNED_SHORT, 0);
       gl.bindVertexArray(null);

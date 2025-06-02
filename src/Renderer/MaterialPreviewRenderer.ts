@@ -27,9 +27,9 @@ export class MaterialPreviewRenderer {
   private angle = 0;
   private _raf = 0;
 
-  constructor(canvas: HTMLCanvasElement, material: MaterialMeta | undefined) {
+    constructor(canvas: HTMLCanvasElement, material: MaterialMeta | undefined) {
     this.canvas   = canvas;
-    this.material = material ?? { name: "EMPTY" };   // ← гарантируем объект
+    this.material = material ?? { name: "EMPTY" };
     const gl = canvas.getContext("webgl2");
     if (!gl) throw new Error("WebGL2 is not supported");
     this.gl = gl;
@@ -37,20 +37,26 @@ export class MaterialPreviewRenderer {
   }
 
   async init() {
-    // Если даже сюда кто-то просочился без colorMap, вывалим dummy
-    this.sphere = createSphereMesh(1, 64, 32, this.gl);
+    // Создание сферы
+    console.warn('[MaterialPreviewRenderer] Calling createSphereMesh...');
+this.sphere = createSphereMesh(0.6, 64, 32, this.gl);
+    console.warn('[MaterialPreviewRenderer] Sphere created:', this.sphere);
+
     this.program = createPBRShaderProgram(this.gl);
+    console.warn('[MaterialPreviewRenderer] PBR program created:', this.program);
+
     this.textures = await loadMaterialTextures(this.gl, this.material);
+    console.warn('[MaterialPreviewRenderer] Textures loaded:', this.textures);
 
     this._animate = this._animate.bind(this);
     requestAnimationFrame(this._animate);
   }
 
-  private _animate() {
-    this.angle += 0.012;
+  private _animate = (time = 0) => {
+    this.angle = (time * 0.001) % (Math.PI * 2);
     this.render();
     this._raf = requestAnimationFrame(this._animate);
-  }
+  };
 
   stop() {
     if (this._raf) cancelAnimationFrame(this._raf);
@@ -59,19 +65,18 @@ export class MaterialPreviewRenderer {
   render() {
     if (!this.program) return;
     const gl = this.gl;
-
     gl.viewport(0, 0, this.canvas.width, this.canvas.height);
     gl.clearColor(0.12, 0.12, 0.14, 1);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-    gl.enable(gl.DEPTH_TEST);
 
-    // Матрицы
+    gl.enable(gl.DEPTH_TEST);
+    gl.enable(gl.CULL_FACE);
+    gl.cullFace(gl.BACK);
+
     const model = mat4.create();
     mat4.rotateY(model, model, this.angle);
-
     const view = mat4.create();
-    mat4.lookAt(view, [0, 0, 2.4], [0, 0, 0], [0, 1, 0]);
-
+mat4.lookAt(view, [0, 0, 1.6], [0, 0, 0], [0, 1, 0]);
     const proj = mat4.create();
     mat4.perspective(proj, Math.PI / 4, this.canvas.width / this.canvas.height, 0.1, 20);
 
@@ -96,7 +101,10 @@ export class MaterialPreviewRenderer {
       this.material.parameters?.roughness ?? 0.7
     );
 
+    // log перед рендером!
+    console.warn('[MaterialPreviewRenderer] Rendering mesh:', this.sphere);
     this.textures.bind(gl, this.program);
     this.sphere.render(gl, this.program);
   }
+
 }
