@@ -92,19 +92,18 @@ class GameFacade {
     this.core.add(terrainObj);
     return terrainObj;
   }
-  /* «сахар»-методы ------------------------------------------- */
-  /** 
-   * Создать PBR-превью материала для GUI
-   * @param canvas - DOM-элемент, в котором отрисовывается превью
-   * @param materialAsset - AssetItem с meta-описанием материала
-   * @returns экземпляр MaterialPreviewRenderer
-   */
-  createMaterialPreview(canvas: HTMLCanvasElement, materialAsset: AssetItem): MaterialPreviewRenderer {
-    // Здесь можно брать meta/material.json, или вытаскивать через asset.meta
-    // Если нужно, можно тут же нормализовать пути (например, абсолютный путь к текстурам)
-    const meta: MaterialMeta = materialAsset.meta;
-    return new MaterialPreviewRenderer(canvas, meta);
+
+  createMaterialPreview(
+  canvas: HTMLCanvasElement,
+  meta: MaterialMeta | undefined   // <-- допускаем undefined
+) {
+  // если meta нет или в нём нет colorMap — даже не создаём рендерер
+  if (!meta || !meta.colorMap) {
+    console.warn("createMaterialPreview: пропуск, meta отсутствует или без colorMap", meta);
+    return null;
   }
+  return new MaterialPreviewRenderer(canvas, meta);
+}
 spawnSphere   (r=2, seg=24, pos=[0,-5,0], color='#fff') {
   return this.spawnPrimitive('sphere', { radius:r, segments:seg, position:pos, color });
 }

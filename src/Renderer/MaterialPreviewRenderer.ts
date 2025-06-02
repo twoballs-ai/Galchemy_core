@@ -1,7 +1,8 @@
-import { mat4, vec3 } from '../vendor/gl-matrix/index.js';
-import { createSphereMesh, SphereMesh } from '../utils/SphereMeshPreview.js';
-import { loadMaterialTextures, MaterialTextures } from '../utils/PreviewTextureLoader.js';
-import { createPBRShaderProgram } from '../Renderer/shaders/pbrShaderSrc.js';
+// src/Renderer/MaterialPreviewRenderer.ts
+import { mat4, vec3 } from "../vendor/gl-matrix/index.js";
+import { createSphereMesh, SphereMesh } from "../utils/SphereMeshPreview.js";
+import { loadMaterialTextures, MaterialTextures } from "../utils/PreviewTextureLoader.js";
+import { createPBRShaderProgram } from "./shaders/pbrShaderSrc.js";
 
 // Тип для material.meta из material.json
 export interface MaterialMeta {
@@ -26,16 +27,17 @@ export class MaterialPreviewRenderer {
   private angle = 0;
   private _raf = 0;
 
-  constructor(canvas: HTMLCanvasElement, material: MaterialMeta) {
-    this.canvas = canvas;
-    this.material = material;
-    const gl = canvas.getContext('webgl2');
-    if (!gl) throw new Error('WebGL2 is not supported');
+  constructor(canvas: HTMLCanvasElement, material: MaterialMeta | undefined) {
+    this.canvas   = canvas;
+    this.material = material ?? { name: "EMPTY" };   // ← гарантируем объект
+    const gl = canvas.getContext("webgl2");
+    if (!gl) throw new Error("WebGL2 is not supported");
     this.gl = gl;
     this.init();
   }
 
   async init() {
+    // Если даже сюда кто-то просочился без colorMap, вывалим dummy
     this.sphere = createSphereMesh(1, 64, 32, this.gl);
     this.program = createPBRShaderProgram(this.gl);
     this.textures = await loadMaterialTextures(this.gl, this.material);
@@ -57,6 +59,7 @@ export class MaterialPreviewRenderer {
   render() {
     if (!this.program) return;
     const gl = this.gl;
+
     gl.viewport(0, 0, this.canvas.width, this.canvas.height);
     gl.clearColor(0.12, 0.12, 0.14, 1);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
@@ -74,20 +77,26 @@ export class MaterialPreviewRenderer {
 
     gl.useProgram(this.program);
 
-    // uniform-ы
     gl.uniformMatrix4fv(gl.getUniformLocation(this.program, "uModel"), false, model);
     gl.uniformMatrix4fv(gl.getUniformLocation(this.program, "uView"), false, view);
     gl.uniformMatrix4fv(gl.getUniformLocation(this.program, "uProj"), false, proj);
 
-    gl.uniform3fv(gl.getUniformLocation(this.program, "uLightDir"), vec3.normalize(vec3.create(), [-1, 2, 2]));
+    gl.uniform3fv(
+      gl.getUniformLocation(this.program, "uLightDir"),
+      vec3.normalize(vec3.create(), [-1, 2, 2])
+    );
     gl.uniform3fv(gl.getUniformLocation(this.program, "uCameraPos"), [0, 0, 2.4]);
 
-    gl.uniform1f(gl.getUniformLocation(this.program, "uMetallic"), this.material.parameters?.metalness ?? 0.0);
-    gl.uniform1f(gl.getUniformLocation(this.program, "uRoughness"), this.material.parameters?.roughness ?? 0.7);
+    gl.uniform1f(
+      gl.getUniformLocation(this.program, "uMetallic"),
+      this.material.parameters?.metalness ?? 0.0
+    );
+    gl.uniform1f(
+      gl.getUniformLocation(this.program, "uRoughness"),
+      this.material.parameters?.roughness ?? 0.7
+    );
 
-    // Биндим текстуры
     this.textures.bind(gl, this.program);
-
     this.sphere.render(gl, this.program);
   }
 }
