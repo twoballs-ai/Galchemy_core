@@ -101,8 +101,7 @@ mat4.lookAt(view, [0, 0, 1.6], [0, 0, 0], [0, 1, 0]);
       this.material.parameters?.roughness ?? 0.7
     );
 
-    // log перед рендером!
-    console.warn('[MaterialPreviewRenderer] Rendering mesh:', this.sphere);
+
     this.textures.bind(gl, this.program);
     this.sphere.render(gl, this.program);
   }
