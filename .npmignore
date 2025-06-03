@@ -1,3 +1,5 @@
-src/tests
-.babelrc
-webpack.config.js
+src/
+node_modules/
+rollup.config.js
+tsconfig.json
+*.log

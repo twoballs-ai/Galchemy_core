@@ -1,40 +1,51 @@
 {
   "name": "game-alchemy-core",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "Core functionality for the Galchemy.js game framework.",
-  "main": "./dist/galchemy.bundle.js",
-  "module": "./src/index.js",
+  "main": "./dist/galchemy.cjs.js",
+  "module": "./dist/galchemy.esm.js",
+  "types": "./dist/index.d.ts",
+  "browser": "./dist/galchemy.umd.js",
+  "exports": {
+    ".": {
+      "import": "./dist/galchemy.esm.js",
+      "require": "./dist/galchemy.cjs.js",
+      "browser": "./dist/galchemy.umd.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
   "scripts": {
-    "build": "webpack --config webpack.config.js",
-    "build:dev": "webpack --mode development --config webpack.config.js",
-    "build:prod": "webpack --mode production --config webpack.config.js",
-    "generate:materials": "node scripts/generate-materials.js"
+    "build": "rollup -c"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/twoballs-ai/Galchemy_core.git"
   },
   "keywords": [
     "game",
     "engine",
+    "typescript",
     "javascript",
     "2d",
+    "3d",
     "canvas"
   ],
   "author": "Boris Bogatyrev",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/twoballs-ai/Galchemy_core.git"
-  },
   "license": "MIT",
-  "files": [
-    "dist",
-    "src",
-    "README.md"
-  ],
+  "peerDependencies": {
+    "gl-matrix": "^3.4.3"
+  },
   "devDependencies": {
-    "@babel/core": "^7.0.0",
-    "@babel/preset-env": "^7.0.0",
-    "babel-loader": "^9.0.0",
-    "typescript": "^5.8.3",
-    "webpack": "^5.0.0",
-    "webpack-cli": "^5.0.0"
+    "@rollup/plugin-commonjs": "^25.0.7",
+    "@rollup/plugin-node-resolve": "^15.2.3",
+    "@rollup/plugin-typescript": "^11.1.6",
+    "rollup": "^4.16.5",
+    "rollup-plugin-dts": "^6.1.0",
+    "typescript": "^5.4.5"
   },
   "dependencies": {
     "gl-matrix": "^3.4.3",
