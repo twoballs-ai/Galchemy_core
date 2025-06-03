@@ -4,7 +4,6 @@ export function createSphereMesh(
   rings: number,
   gl: WebGL2RenderingContext
 ): SphereMesh {
-  console.warn('[createSphereMesh] called with:', { radius, segments, rings });
 
   const positions: number[] = [];
   const normals: number[] = [];
@@ -33,12 +32,6 @@ indices.push(i + 1, i + segments + 1, i + segments + 2);
     }
   }
 
-  // Log part of geometry for анализа
-  console.warn('[createSphereMesh] Example positions:', positions.slice(0, 12));
-  console.warn('[createSphereMesh] Example normals:', normals.slice(0, 12));
-  console.warn('[createSphereMesh] Example uvs:', uvs.slice(0, 8));
-  console.warn('[createSphereMesh] Example indices:', indices.slice(0, 12));
-  console.warn('[createSphereMesh] Counts: positions:', positions.length / 3, 'indices:', indices.length);
 
   // VAO/VBO/IBO
   const vao = gl.createVertexArray()!;
@@ -76,7 +69,6 @@ indices.push(i + 1, i + segments + 1, i + segments + 2);
     vao,
     indexCount: indices.length,
     render: (gl: WebGL2RenderingContext, program: WebGLProgram) => {
-      console.warn('[SphereMesh] Drawing elements, vao:', vao, 'indexCount:', indices.length);
       gl.bindVertexArray(vao);
       gl.drawElements(gl.TRIANGLES, indices.length, gl.UNSIGNED_SHORT, 0);
       gl.bindVertexArray(null);
