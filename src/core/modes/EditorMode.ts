@@ -1,8 +1,8 @@
-import { BaseMode }       from './BaseMode["';];
-import { EditorCamera }   from '../cameras/EditorCamera["';];
-import { EditorControls } from '../controls/EditorControls["';];
-import { GameObjectCharacter }      from '../../GameObjects/GameObjectCharacter["';];
-import { EditorCharacterView }       from '../../GameObjects/views/EditorCharacterView["';];
+import { BaseMode }       from './BaseMode';
+import { EditorCamera }   from '../cameras/EditorCamera';
+import { EditorControls } from '../controls/EditorControls';
+import { GameObjectCharacter }      from '../../GameObjects/GameObjectCharacter';
+import { EditorCharacterView }       from '../../GameObjects/views/EditorCharacterView';
 import type { Core, IGameObject }   from '../../types/CoreTypes';
 
 export class EditorMode extends BaseMode {

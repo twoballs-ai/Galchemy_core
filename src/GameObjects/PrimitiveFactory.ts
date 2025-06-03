@@ -1,20 +1,20 @@
 // core/PrimitiveFactory.js
-import { GameObject3D }            from './primitives/GameObject3D["';];
-import { createSphereGeometry }    from './primitives/3dPrimitives/createSphereGeometry["';];
-import { createCubeGeometry }      from './primitives/3dPrimitives/createCubeGeometry["';];
-import { createCylinderGeometry }  from './primitives/3dPrimitives/createCylinderGeometry["';];
-import { createTerrainGeometry } from './primitives/3dPrimitives/createTerrainGeometry["';]
-import { GameObjectCamera } from './GameObjectCamera["';];
-import { GameObjectLight } from './GameObjectLight["';];
+import { GameObject3D }            from './primitives/GameObject3D';
+import { createSphereGeometry }    from './primitives/3dPrimitives/createSphereGeometry';
+import { createCubeGeometry }      from './primitives/3dPrimitives/createCubeGeometry';
+import { createCylinderGeometry }  from './primitives/3dPrimitives/createCylinderGeometry';
+import { createTerrainGeometry } from './primitives/3dPrimitives/createTerrainGeometry';
+import { GameObjectCamera } from './GameObjectCamera';
+import { GameObjectLight } from './GameObjectLight';
 import defaultTextureSrc           from '../assets/materials/metallic/Metal052C_1K-JPG/Metal052C_1K-JPG_Color.jpg';  // добавили!
-import { GameObjectCharacter } from './GameObjectCharacter["';];
+import { GameObjectCharacter } from './GameObjectCharacter';
 import { GameObjectSpawnPoint } from './GameObjectSpawnPoint.js';
-import { COORD } from '../core/CoordinateSystem["';];
+import { COORD } from '../core/CoordinateSystem';
 // ── камеры ─────────────────────────────────────────────────────────
-import { GameCamera }        from '../core/cameras/GameCamera["';];
-import { FirstPersonCamera } from '../core/cameras/FirstPersonCamera["';];
-import { ThirdPersonCamera } from '../core/cameras/ThirdPersonCamera["';];
-import { TopDownCamera }     from '../core/cameras/TopDownCamera["';];
+import { GameCamera }        from '../core/cameras/GameCamera';
+import { FirstPersonCamera } from '../core/cameras/FirstPersonCamera';
+import { ThirdPersonCamera } from '../core/cameras/ThirdPersonCamera';
+import { TopDownCamera }     from '../core/cameras/TopDownCamera';
 const DEFAULT_PRIMITIVE_COLOR = '#7f7f7f';
 const DEFAULT_DISTANCE = 5;
 type CameraSubtype = 'game' | 'first' | 'third' | 'topdown';

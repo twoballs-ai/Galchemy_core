@@ -1,8 +1,8 @@
 import { vec3 } from '../../vendor/gl-matrix/index.js';
-import type { CameraInterface } from '../../types/RendererTypes.js';
-import { COORD } from '../../core/CoordinateSystem["';];
-import { drawLines } from '../internal/drawLines.js'; // путь укажи свой
-import type { WebGLRenderer } from '../renderers/WebGLRenderer.js';
+import type { CameraInterface } from '../../types/RendererTypes';
+import { COORD } from '../../core/CoordinateSystem';
+import { drawLines } from '../internal/drawLines'; // путь укажи свой
+import type { WebGLRenderer } from '../renderers/WebGLRenderer';
 
 export function drawCameraFrustum(
   gl: WebGL2RenderingContext,

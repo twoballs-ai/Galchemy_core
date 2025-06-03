@@ -1,4 +1,4 @@
-import { BaseCamera } from './BaseCamera["';];
+import { BaseCamera } from './BaseCamera';
 import { mat4, vec3 } from '../../vendor/gl-matrix/index.js';
 import { COORD } from "../../core/CoordinateSystem";
 

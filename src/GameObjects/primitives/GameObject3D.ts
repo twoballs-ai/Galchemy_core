@@ -1,6 +1,6 @@
 // src/core/GameObjects/GameObject3D.js
 import { mat4, mat3 } from '../../vendor/gl-matrix/index.js';
-import { hexToRGB } from '../../utils/ColorMixin["';];
+import { hexToRGB } from '../../utils/ColorMixin';
 
 export class GameObject3D {
   /** публичные поля */

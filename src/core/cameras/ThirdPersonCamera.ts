@@ -1,4 +1,4 @@
-import { FollowCamera } from "./FollowCamera["';];
+import { FollowCamera } from "./FollowCamera";
 import { vec3, quat, mat4 } from "../../vendor/gl-matrix/index.js";
 
 /**

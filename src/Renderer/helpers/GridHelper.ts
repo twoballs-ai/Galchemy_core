@@ -1,5 +1,5 @@
-import { drawLines } from '../internal/drawLines.js';
-import { COORD } from '../../core/CoordinateSystem.js';
+import { drawLines } from '../internal/drawLines';
+import { COORD } from '../../core/CoordinateSystem';
 
 /**
  * Рисует сетку на плоскости, перпендикулярной COORD.UP,

@@ -1,6 +1,6 @@
 import { mat4 } from '../../vendor/gl-matrix/index.js';
 import { COORD } from "../../core/CoordinateSystem";
-import { UP } from '../../constants/CoordSystem["';];  // добавим импорт
+import { UP } from '../../constants/CoordSystem';  // добавим импорт
 
 import { vec3 } from '../../vendor/gl-matrix/index.js';
 export class BaseCamera {

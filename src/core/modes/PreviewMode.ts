@@ -1,4 +1,4 @@
-import { BaseMode } from './BaseMode["';];
+import { BaseMode } from './BaseMode';
 
 export class PreviewMode extends BaseMode {
   enter(core: Core) {

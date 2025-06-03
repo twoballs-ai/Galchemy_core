@@ -1,17 +1,17 @@
 // src/GameFacade.js
-import { Core }           from './Core["';];
+import { Core }           from './Core';
 // import { GameObject2D }   from '../GameObjects/primitives/GameObject2D.js';
-import { primitiveFactory } from '../GameObjects/PrimitiveFactory["';];   // ← фабрика
+import { primitiveFactory } from '../GameObjects/PrimitiveFactory';   // ← фабрика
 
-import { loadGLB }        from '../utils/GLTFLoader["';];
+import { loadGLB }        from '../utils/GLTFLoader';
 
-import { EditorMode }     from './modes/EditorMode["';];
-import { PreviewMode }    from './modes/PreviewMode["';];
-import { patchObject, updateGeometry } from './helpers/objectUpdater["';];
-import { MaterialPreviewRenderer, MaterialMeta } from '../Renderer/MaterialPreviewRenderer["';];
+import { EditorMode }     from './modes/EditorMode';
+import { PreviewMode }    from './modes/PreviewMode';
+import { patchObject, updateGeometry } from './helpers/objectUpdater';
+import { MaterialPreviewRenderer, MaterialMeta } from '../Renderer/MaterialPreviewRenderer';
 
-export { GameObject3D }   from '../GameObjects/primitives/GameObject3D["';];
-export { primitiveFactory } from '../GameObjects/PrimitiveFactory["';];   // ре-экспорт
+export { GameObject3D }   from '../GameObjects/primitives/GameObject3D';
+export { primitiveFactory } from '../GameObjects/PrimitiveFactory';   // ре-экспорт
 
 class GameFacade {
   constructor() {

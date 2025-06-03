@@ -3,9 +3,9 @@ import { mat4, vec3 } from "../../vendor/gl-matrix/index.js";
 import {
   AXIS_X_COLOR, AXIS_Y_COLOR, AXIS_Z_COLOR,
   RIGHT, UP, FORWARD
-} from "../../constants/CoordSystem["';];
-import { COORD } from "../../core/CoordinateSystem["';];
-import type { WebGLRenderer } from "../renderers/WebGLRenderer.js";
+} from "../../constants/CoordSystem";
+import { COORD } from "../../core/CoordinateSystem";
+import type { WebGLRenderer } from "../renderers/WebGLRenderer";
 
 export enum GizmoMode {
   TRANSLATE = 'translate',

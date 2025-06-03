@@ -1,4 +1,4 @@
-import { BaseCamera } from './BaseCamera.js';
+import { BaseCamera } from './BaseCamera';
 import { mat4 } from '../../vendor/gl-matrix/index.js';
 
 export class GameCamera extends BaseCamera {

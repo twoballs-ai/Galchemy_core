@@ -1,9 +1,9 @@
 // src/Renderer/helpers/GizmoHelper.ts
 import { mat4, vec3 } from "../../vendor/gl-matrix/index.js";
-import type { WebGLRenderer } from "../renderers/WebGLRenderer.js";
-import { drawLines } from "../internal/drawLines["';];
+import type { WebGLRenderer } from "../renderers/WebGLRenderer";
+import { drawLines } from "../internal/drawLines";
 import { COORD } from "../../core/CoordinateSystem";
-import { buildGizmoMatrix } from "./GizmoMatrix["';];
+import { buildGizmoMatrix } from "./GizmoMatrix";
 
 export function drawGizmo(ctx: WebGLRenderer): void {
   const { gl, aPos, uModel, uView, uProj, uColor, activeCamera } = ctx;
