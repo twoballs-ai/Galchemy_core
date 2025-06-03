@@ -12,7 +12,7 @@ import { drawCameraFrustum } from './helpers/FrustumHelper';
 import { COORD } from "../core/CoordinateSystem";
 import { Shader } from "./internal/Shader";
 import { Skybox } from "../GameObjects/SkyBox";
-import { DaylightBoxPaths } from "../assets/skyBoxes/DaylightBox";
+// import { DaylightBoxPaths } from "../assets/skyBoxes/DaylightBox";
 export class WebGLRenderer extends Renderer {
   canvas: HTMLCanvasElement;
   gl: WebGL2RenderingContext;
@@ -61,7 +61,7 @@ export class WebGLRenderer extends Renderer {
   this.canvas = graphicalContext.getCanvas();
   this.gl     = graphicalContext.getContext() as WebGL2RenderingContext;
   COORD.setGL(this.gl); // ✅ инициализируем систему координат
-  this.skybox = new Skybox(this.gl, DaylightBoxPaths); 
+  // this.skybox = new Skybox(this.gl, DaylightBoxPaths); 
   this._initWebGL(backgroundColor);
   this._initShaders();
 

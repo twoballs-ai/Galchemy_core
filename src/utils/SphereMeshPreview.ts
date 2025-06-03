@@ -1,3 +1,8 @@
+export interface SphereMesh {
+  vao: WebGLVertexArrayObject;
+  indexCount: number;
+  render: (gl: WebGL2RenderingContext, program: WebGLProgram) => void;
+}
 export function createSphereMesh(
   radius: number,
   segments: number,
@@ -65,13 +70,14 @@ indices.push(i + 1, i + segments + 1, i + segments + 2);
 
   gl.bindVertexArray(null);
 
-  return {
-    vao,
-    indexCount: indices.length,
-    render: (gl: WebGL2RenderingContext, program: WebGLProgram) => {
-      gl.bindVertexArray(vao);
-      gl.drawElements(gl.TRIANGLES, indices.length, gl.UNSIGNED_SHORT, 0);
-      gl.bindVertexArray(null);
-    }
-  };
+const indexCount = indices.length;
+return {
+  vao,
+  indexCount,
+  render: (gl: WebGL2RenderingContext, program: WebGLProgram) => {
+    gl.bindVertexArray(vao);
+    gl.drawElements(gl.TRIANGLES, indexCount, gl.UNSIGNED_SHORT, 0);
+    gl.bindVertexArray(null);
+  }
+};
 }

@@ -1,24 +1,65 @@
 import { mat4 } from "gl-matrix";
 
+// Типы для GLTF структуры
+interface GLTFBufferView {
+  buffer: number;
+  byteOffset?: number;
+  byteLength: number;
+  byteStride?: number;
+  target?: number;
+}
+
+interface GLTFAccessor {
+  bufferView: number;
+  byteOffset?: number;
+  componentType: number;
+  count: number;
+  type: string;
+  max?: number[];
+  min?: number[];
+}
+
+interface GLTFMeshPrimitive {
+  attributes: {
+    POSITION: number;
+    NORMAL?: number;
+    TEXCOORD_0?: number;
+  };
+  indices: number;
+}
+
+interface GLTFMesh {
+  primitives: GLTFMeshPrimitive[];
+  name?: string;
+}
+
+interface GLTF {
+  accessors: GLTFAccessor[];
+  bufferViews: GLTFBufferView[];
+  meshes: GLTFMesh[];
+}
+
 export function buildGameObjectFromGLB(
   gl: WebGL2RenderingContext,
-  json: any,
+  json: GLTF, // ✅ типизированный JSON
   binary: ArrayBuffer
-): any {
+) {
   const meshDef = json.meshes[0];
-  const prim    = meshDef.primitives[0];
+  const prim = meshDef.primitives[0];
 
   const positionAccessorIndex = prim.attributes.POSITION;
-  const normalAccessorIndex   = prim.attributes.NORMAL;
+  const normalAccessorIndex = prim.attributes.NORMAL;
   const texcoordAccessorIndex = prim.attributes.TEXCOORD_0;
-  const indicesAccessorIndex  = prim.indices;
+  const indicesAccessorIndex = prim.indices;
 
-  function readAccessor(accessorIndex: number): Float32Array | Uint16Array {
-    const accessor    = json.accessors[accessorIndex];
-    const bufferView  = json.bufferViews[accessor.bufferView];
-    const byteOffset  = (bufferView.byteOffset || 0) + (accessor.byteOffset || 0);
-    const byteLength  = accessor.count * getNumComponents(accessor.type) * getComponentSize(accessor.componentType);
-    const slice       = binary.slice(byteOffset, byteOffset + byteLength);
+  function readAccessor(accessorIndex: number | undefined): Float32Array | Uint16Array | null {
+    if (accessorIndex === undefined) return null;
+
+    const accessor = json.accessors[accessorIndex];
+    const bufferView = json.bufferViews[accessor.bufferView];
+    const byteOffset = (bufferView.byteOffset || 0) + (accessor.byteOffset || 0);
+    const byteLength = accessor.count * getNumComponents(accessor.type) * getComponentSize(accessor.componentType);
+    const slice = binary.slice(byteOffset, byteOffset + byteLength);
 
     switch (accessor.componentType) {
       case 5123: return new Uint16Array(slice); // UNSIGNED_SHORT
@@ -33,21 +74,21 @@ export function buildGameObjectFromGLB(
       VEC2: 2,
       VEC3: 3,
       VEC4: 4,
-      MAT4: 16
-    }[type];
+      MAT4: 16,
+    }[type] ?? (() => { throw new Error(`Unknown accessor type: ${type}`); })();
   }
 
   function getComponentSize(componentType: number): number {
     return {
       5123: 2, // UNSIGNED_SHORT
-      5126: 4  // FLOAT
-    }[componentType];
+      5126: 4, // FLOAT
+    }[componentType] ?? (() => { throw new Error(`Unknown component type: ${componentType}`); })();
   }
 
   const positions = readAccessor(positionAccessorIndex) as Float32Array;
-  const normals   = normalAccessorIndex !== undefined ? readAccessor(normalAccessorIndex) as Float32Array : null;
-  const texCoords = texcoordAccessorIndex !== undefined ? readAccessor(texcoordAccessorIndex) as Float32Array : null;
-  const indices   = readAccessor(indicesAccessorIndex) as Uint16Array;
+  const normals = readAccessor(normalAccessorIndex) as Float32Array | null;
+  const texCoords = readAccessor(texcoordAccessorIndex) as Float32Array | null;
+  const indices = readAccessor(indicesAccessorIndex) as Uint16Array;
 
   // Создание VBO/IBO
   const positionBuffer = gl.createBuffer()!;
@@ -58,7 +99,7 @@ export function buildGameObjectFromGLB(
   gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
   gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, indices, gl.STATIC_DRAW);
 
-  let texCoordBuffer = null;
+  let texCoordBuffer: WebGLBuffer | null = null;
   if (texCoords) {
     texCoordBuffer = gl.createBuffer()!;
     gl.bindBuffer(gl.ARRAY_BUFFER, texCoordBuffer);
@@ -80,9 +121,16 @@ export function buildGameObjectFromGLB(
       positions,
       indices,
       normals,
-      texCoords
+      texCoords,
     },
-    renderWebGL3D(gl: WebGL2RenderingContext, shaderProgram: WebGLProgram, uModel: WebGLUniformLocation, uAmbient: WebGLUniformLocation | null, uUseTexture: WebGLUniformLocation | null, uNormalMatrix: WebGLUniformLocation | null) {
+    renderWebGL3D(
+      gl: WebGL2RenderingContext,
+      shaderProgram: WebGLProgram,
+      uModel: WebGLUniformLocation,
+      uAmbient: WebGLUniformLocation | null,
+      uUseTexture: WebGLUniformLocation | null,
+      uNormalMatrix: WebGLUniformLocation | null
+    ) {
       const modelMatrix = mat4.create(); // можно добавить transform
       gl.uniformMatrix4fv(uModel, false, modelMatrix);
       if (uAmbient) gl.uniform3fv(uAmbient, [0.6, 0.6, 0.6]);

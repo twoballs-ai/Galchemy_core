@@ -1,43 +1,47 @@
-// src/utils/GLTFLoader.js
-export async function loadGLB(url) {
-    const response = await fetch(url);
-    const arrayBuffer = await response.arrayBuffer();
-    const data = parseGLB(arrayBuffer);
-    return data;
+export async function loadGLB(url: string): Promise<{ json: any; binary: ArrayBuffer | null }> {
+  const response = await fetch(url);
+  const arrayBuffer = await response.arrayBuffer();
+  const data = parseGLB(arrayBuffer);
+  return data;
+}
+
+function parseGLB(buffer: ArrayBuffer): { json: any; binary: ArrayBuffer | null } {
+  const dataView = new DataView(buffer);
+
+  // GLB Header (12 bytes)
+  const magic = dataView.getUint32(0, true);
+  const version = dataView.getUint32(4, true);
+  const length = dataView.getUint32(8, true);
+
+  if (magic !== 0x46546C67) throw new Error("Invalid glTF binary format");
+
+  let offset = 12;
+  const chunks: { type: "JSON" | "BIN"; data: ArrayBuffer }[] = [];
+
+  while (offset < length) {
+    const chunkLength = dataView.getUint32(offset, true);
+    const chunkType = dataView.getUint32(offset + 4, true);
+    const chunkData = buffer.slice(offset + 8, offset + 8 + chunkLength);
+
+    chunks.push({
+      type: chunkType === 0x4E4F534A ? "JSON" : "BIN",
+      data: chunkData
+    });
+
+    offset += 8 + chunkLength;
   }
-  
-  function parseGLB(buffer) {
-    const dataView = new DataView(buffer);
-  
-    // GLB Header (12 bytes)
-    const magic = dataView.getUint32(0, true);
-    const version = dataView.getUint32(4, true);
-    const length = dataView.getUint32(8, true);
-  
-    if (magic !== 0x46546C67) throw new Error("Invalid glTF binary format");
-  
-    let offset = 12;
-    const chunks = [];
-  
-    while (offset < length) {
-      const chunkLength = dataView.getUint32(offset, true);
-      const chunkType = dataView.getUint32(offset + 4, true);
-      const chunkData = buffer.slice(offset + 8, offset + 8 + chunkLength);
-  
-      chunks.push({
-        type: chunkType === 0x4E4F534A ? "JSON" : "BIN",
-        data: chunkData
-      });
-  
-      offset += 8 + chunkLength;
-    }
-  
-    const jsonChunk = JSON.parse(new TextDecoder().decode(chunks.find(c => c.type === "JSON").data));
-    const binChunk = chunks.find(c => c.type === "BIN")?.data ?? null;
-  
-    return {
-      json: jsonChunk,
-      binary: binChunk
-    };
+
+  const jsonChunkEntry = chunks.find(c => c.type === "JSON");
+  if (!jsonChunkEntry) {
+    throw new Error("Missing JSON chunk in GLB file");
   }
-  
+  const jsonChunk = JSON.parse(new TextDecoder().decode(jsonChunkEntry.data));
+
+  const binChunkEntry = chunks.find(c => c.type === "BIN");
+  const binChunk = binChunkEntry ? binChunkEntry.data : null;
+
+  return {
+    json: jsonChunk,
+    binary: binChunk
+  };
+}
