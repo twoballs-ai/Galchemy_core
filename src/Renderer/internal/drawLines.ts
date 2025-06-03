@@ -5,7 +5,7 @@ import {
   AXIS_Y_COLOR,
   AXIS_Z_COLOR,
   SELECTION_COLOR
-} from '../../constants/CoordSystem.ts';
+} from '../../constants/CoordSystem["';];
 
 const COLORS = {
   x: AXIS_X_COLOR,

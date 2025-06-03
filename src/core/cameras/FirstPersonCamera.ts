@@ -1,4 +1,4 @@
-import { FollowCamera } from "./FollowCamera.ts";
+import { FollowCamera } from "./FollowCamera["';];
 import { vec3 } from "../../vendor/gl-matrix/index.js";
 
 /**

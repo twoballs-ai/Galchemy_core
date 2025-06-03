@@ -1,4 +1,4 @@
-import { SELECTION_COLOR } from '../../constants/CoordSystem.ts';
+import { SELECTION_COLOR } from '../../constants/CoordSystem["';];
 
 export function drawMeshOutline({
   gl,

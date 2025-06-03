@@ -1,6 +1,6 @@
 // cameras/TopDownCamera.ts
 import { mat4, vec3 } from "../../vendor/gl-matrix/index.js";
-import { FollowCamera } from "./FollowCamera.ts";
+import { FollowCamera } from "./FollowCamera["';];
 
 export class TopDownCamera extends FollowCamera {
   orthoSize = 20;      // масштаб клетки в мировых единицах

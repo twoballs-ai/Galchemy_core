@@ -1,7 +1,7 @@
 import { createSphereGeometry }   from '../../GameObjects/primitives/3dPrimitives/createSphereGeometry.js';
 import { createCubeGeometry }     from '../../GameObjects/primitives/3dPrimitives/createCubeGeometry.js';
 import { createCylinderGeometry } from '../../GameObjects/primitives/3dPrimitives/createCylinderGeometry.js';
-import type { Core }              from '../Core.ts';
+import type { Core }              from '../Core["';];
 
 /**
  * Применяет свойства к вложенной камере (если есть).
