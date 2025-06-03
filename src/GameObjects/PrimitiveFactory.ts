@@ -167,12 +167,7 @@ primitiveFactory.register('light', (gl, opts) => new GameObjectLight(gl, opts));
 
 primitiveFactory.register(
   'character',
-  (gl, {
-    position = [0, 0, 0],
-    color,
-    texture,
-    name = 'Character',
-  }) =>
+  (gl, { position = [0, 0, 0], color, texture, name = 'Character' }) =>
     new GameObjectCharacter(gl, {
       position,
       color,

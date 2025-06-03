@@ -1,8 +1,13 @@
-import { GameObject3D } from './primitives/GameObject3D.js';
+// src/GameObjects/primitives/3dPrimitives/GameObjectCharacter.ts
+import { GameObject3D } from '../GameObjects/primitives/GameObject3D';
 
 export class GameObjectCharacter extends GameObject3D {
+  // Если нужна физика, добавим поле collider
+  collider: { type: 'capsule'; radius: number; height: number; offset: [number, number, number] };
+
   constructor(gl: WebGL2RenderingContext, opts: any = {}) {
-    // Передаём либо mesh, либо пустой заглушечный объект
+    // Если хотим «модель» персонажа, можно передать mesh через opts.mesh,
+    // иначе просто даём пустой заглушечный меш:
     const mesh = opts.mesh ?? {
       positions: new Float32Array(),
       indices: new Uint16Array(),
@@ -16,16 +21,23 @@ export class GameObjectCharacter extends GameObject3D {
     });
 
     this.id = opts.id ?? crypto.randomUUID();
-    this.sceneId = opts.sceneId ?? null;
     this.type = 'character';
     this.name = opts.name ?? 'Character';
-    this.attachedCamera = null;
+
+    // Определяем коллайдер в форме капсулы
+    this.collider = {
+      type: 'capsule',
+      radius: 0.5,
+      height: 2.0,
+      offset: [0, -1.0, 0],  // смещаем центрыдвижку капсулы вниз наполовину
+    };
+
+    // Если у вас есть система физики в Core, 
+    // можно тут же зарегистрировать коллайдер, например:
+    // core.physics?.addCapsule(this, this.collider);
   }
 
   attachCamera(cameraObject) {
-    this.attachedCamera = cameraObject;
     cameraObject.attachTo(this);
   }
-
-  // В перспективе: действия, анимации, поведение
 }

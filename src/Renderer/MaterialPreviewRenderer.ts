@@ -38,15 +38,11 @@ export class MaterialPreviewRenderer {
 
   async init() {
     // Создание сферы
-    console.warn('[MaterialPreviewRenderer] Calling createSphereMesh...');
-this.sphere = createSphereMesh(0.6, 64, 32, this.gl);
-    console.warn('[MaterialPreviewRenderer] Sphere created:', this.sphere);
+    this.sphere = createSphereMesh(0.6, 64, 32, this.gl);
 
     this.program = createPBRShaderProgram(this.gl);
-    console.warn('[MaterialPreviewRenderer] PBR program created:', this.program);
 
     this.textures = await loadMaterialTextures(this.gl, this.material);
-    console.warn('[MaterialPreviewRenderer] Textures loaded:', this.textures);
 
     this._animate = this._animate.bind(this);
     requestAnimationFrame(this._animate);
@@ -76,7 +72,7 @@ this.sphere = createSphereMesh(0.6, 64, 32, this.gl);
     const model = mat4.create();
     mat4.rotateY(model, model, this.angle);
     const view = mat4.create();
-mat4.lookAt(view, [0, 0, 2.5], [0, 0, 0], [0, 1, 0]);
+    mat4.lookAt(view, [0, 0, 2.5], [0, 0, 0], [0, 1, 0]);
     const proj = mat4.create();
     mat4.perspective(proj, Math.PI / 4, this.canvas.width / this.canvas.height, 0.1, 20);
 

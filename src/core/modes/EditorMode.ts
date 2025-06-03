@@ -1,12 +1,15 @@
-import { BaseMode }      from './BaseMode.ts';
-import { EditorCamera }  from '../cameras/EditorCamera.ts';
+import { BaseMode }       from './BaseMode.ts';
+import { EditorCamera }   from '../cameras/EditorCamera.ts';
 import { EditorControls } from '../controls/EditorControls.ts';
-import type { Core }     from '../../types/CoreTypes';
+import { GameObjectCharacter }      from '../../GameObjects/GameObjectCharacter.ts';
+import { EditorCharacterView }       from '../../GameObjects/views/EditorCharacterView.ts';
+import type { Core, IGameObject }   from '../../types/CoreTypes';
 
 export class EditorMode extends BaseMode {
   private core!: Core;
-  private camera!: EditorCamera;          // хранит ссылку на редакторскую
+  private camera!: EditorCamera;
   private controls!: EditorControls;
+  private onObjectAddedHandler!: (payload: { scene: string; object: IGameObject }) => void;
 
   enter(core: Core) {
     super.enter(core);
@@ -19,16 +22,30 @@ export class EditorMode extends BaseMode {
     /* ───────────── ❶ создаём и регистрируем EditorCamera ───────────── */
     this.camera = new EditorCamera(core.canvas.width, core.canvas.height);
 
-    // сообщаем Core, что это «неприкосновенная» камера редактора
+    // говорим Core, что это «неприкосновенная» камера редактора
     core._registerEditorCamera(this.camera);
 
-    // устанавливаем её активной принудительно (force = true)
+    // устанавливаем её активной (force = true)
     core.setActiveCamera(this.camera, /* force */ true);
-
     /* ---------------------------------------------------------------- */
 
-    /* пометки для объектов сцены */
+    /* пометки для уже существующих объектов сцены */
     core.scene.objects.forEach(o => { o.isEditorMode = true; });
+
+    /* ───────────── подписываемся на добавление новых объектов ───────────── */
+    this.onObjectAddedHandler = ({ object }) => {
+      // Если движок добавил GameObjectCharacter, создаём для него капсулу
+      if (object instanceof GameObjectCharacter) {
+        const helper = new EditorCharacterView(
+          core.ctx as WebGL2RenderingContext,
+          object
+        );
+        helper.isEditorOnly = true;
+        core.scene.add(helper);
+      }
+    };
+    core.emitter.on('objectAdded', this.onObjectAddedHandler);
+    /* ─────────────────────────────────────────────────────────────────── */
 
     /* Controls */
     this.controls = new EditorControls(core);
@@ -36,6 +53,7 @@ export class EditorMode extends BaseMode {
 
   exit() {
     this.controls.dispose();
+    this.core.emitter.off('objectAdded', this.onObjectAddedHandler);
   }
 
   update(dt: number) {
