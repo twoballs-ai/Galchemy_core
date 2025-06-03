@@ -28,8 +28,8 @@ export function createSphereMesh(
   for (let y = 0; y < rings; y++) {
     for (let x = 0; x < segments; x++) {
       const i = y * (segments + 1) + x;
-      indices.push(i, i + 1, i + segments + 1);
-      indices.push(i + 1, i + segments + 2, i + segments + 1);
+indices.push(i, i + segments + 1, i + 1);
+indices.push(i + 1, i + segments + 1, i + segments + 2);
     }
   }
 

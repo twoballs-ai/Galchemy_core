@@ -76,7 +76,7 @@ this.sphere = createSphereMesh(0.6, 64, 32, this.gl);
     const model = mat4.create();
     mat4.rotateY(model, model, this.angle);
     const view = mat4.create();
-mat4.lookAt(view, [0, 0, 1.6], [0, 0, 0], [0, 1, 0]);
+mat4.lookAt(view, [0, 0, 2.5], [0, 0, 0], [0, 1, 0]);
     const proj = mat4.create();
     mat4.perspective(proj, Math.PI / 4, this.canvas.width / this.canvas.height, 0.1, 20);
 

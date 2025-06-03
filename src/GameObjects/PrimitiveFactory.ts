@@ -6,7 +6,7 @@ import { createCylinderGeometry }  from './primitives/3dPrimitives/createCylinde
 import { createTerrainGeometry } from './primitives/3dPrimitives/createTerrainGeometry.ts'
 import { GameObjectCamera } from './GameObjectCamera.ts';
 import { GameObjectLight } from './GameObjectLight.ts';
-import defaultTextureSrc           from '../assets/materials/Metal052C_1K-JPG/Metal052C_1K-JPG_Color.jpg';  // добавили!
+import defaultTextureSrc           from '../assets/materials/metallic/Metal052C_1K-JPG/Metal052C_1K-JPG_Color.jpg';  // добавили!
 import { GameObjectCharacter } from './GameObjectCharacter.ts';
 import { GameObjectSpawnPoint } from './GameObjectSpawnPoint.js';
 import { COORD } from '../core/CoordinateSystem.ts';
