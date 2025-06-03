@@ -1,5 +1,5 @@
 // src/Renderer/helpers/GizmoHelper.ts
-import { mat4, vec3 } from "../../vendor/gl-matrix/index.js";
+import { mat4, vec3 } from "gl-matrix";
 import type { WebGLRenderer } from "../renderers/WebGLRenderer";
 import { drawLines } from "../internal/drawLines";
 import { COORD } from "../../core/CoordinateSystem";

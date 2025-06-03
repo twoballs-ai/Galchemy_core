@@ -1,5 +1,5 @@
 // Z‑up ориентация. Никаких импортов WebGL, только математика.
-import { mat4 } from '../../vendor/gl-matrix/index.js';
+import { mat4 } from 'gl-matrix';
 
 export function buildGizmoMatrix(
   cam: { yaw?: number; pitch?: number },

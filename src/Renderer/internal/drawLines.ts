@@ -1,4 +1,4 @@
-import { mat4 } from '../../vendor/gl-matrix/index.js';
+import { mat4 } from 'gl-matrix';
 import type { WebGLRenderer } from '../renderers/WebGLRenderer';
 import {
   AXIS_X_COLOR,

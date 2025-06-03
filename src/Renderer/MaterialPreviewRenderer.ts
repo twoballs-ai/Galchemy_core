@@ -1,8 +1,8 @@
 // src/Renderer/MaterialPreviewRenderer.ts
-import { mat4, vec3 } from "../vendor/gl-matrix/index.js";
-import { createSphereMesh, SphereMesh } from "../utils/SphereMeshPreview.js";
-import { loadMaterialTextures, MaterialTextures } from "../utils/PreviewTextureLoader.js";
-import { createPBRShaderProgram } from "./shaders/pbrShaderSrc.js";
+import { mat4, vec3 } from "gl-matrix";
+import { createSphereMesh, SphereMesh } from "../utils/SphereMeshPreview";
+import { loadMaterialTextures, MaterialTextures } from "../utils/PreviewTextureLoader";
+import { createPBRShaderProgram } from "./shaders/pbrShaderSrc";
 
 // Тип для material.meta из material.json
 export interface MaterialMeta {

@@ -1,4 +1,4 @@
-import { mat4 } from '../../vendor/gl-matrix/index.js';
+import { mat4 } from 'gl-matrix';
 import { loadTexture } from '../../utils/TextureLoader.js';
 
 export class GameObject2D {

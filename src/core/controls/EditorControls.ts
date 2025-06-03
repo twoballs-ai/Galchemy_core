@@ -1,8 +1,8 @@
 import type { Core } from "../core/Core";
 import type { SceneObject } from "../types/SceneObjectTypes";
 import type { DragState } from "../types/RendererTypes";
-import { vec3, mat4 } from "../../vendor/gl-matrix/index.js";
-import { intersectTriangle } from "../../utils/rayTriangle.js";
+import { vec3, mat4 } from "gl-matrix";
+import { intersectTriangle } from "../../utils/rayTriangle";
 
 type DragObjectInfo = {
   obj: SceneObject;

@@ -1,7 +1,7 @@
 import { GameObject3D } from './primitives/GameObject3D.js';
 import { GameCamera } from '../core/cameras/GameCamera.js';
 import { createCameraIconGeometry } from './primitives/3dPrimitives/objectIcons/createCameraIconGeometry.js';
-import { mat4 } from '../vendor/gl-matrix/index.js';
+import { mat4 } from 'gl-matrix';
 
 export class GameObjectCamera extends GameObject3D {
   constructor(gl, opts = {}) {

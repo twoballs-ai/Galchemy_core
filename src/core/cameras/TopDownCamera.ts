@@ -1,5 +1,5 @@
 // cameras/TopDownCamera.ts
-import { mat4, vec3 } from "../../vendor/gl-matrix/index.js";
+import { mat4, vec3 } from "gl-matrix";
 import { FollowCamera } from "./FollowCamera";
 
 export class TopDownCamera extends FollowCamera {

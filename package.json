@@ -27,15 +27,13 @@
   ],
   "author": "Boris Bogatyrev",
   "license": "MIT",
-  "peerDependencies": {
-    "gl-matrix": "^3.4.3"
-  },
   "dependencies": {
     "gl-matrix": "^3.4.3",
     "tslib": "^2.8.1",
     "xml2js": "^0.6.2"
   },
   "devDependencies": {
+    "@types/gl-matrix": "^3.2.0",
     "typescript": "^5.4.5"
   }
 }

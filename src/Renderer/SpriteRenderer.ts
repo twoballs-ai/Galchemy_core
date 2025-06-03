@@ -1,4 +1,4 @@
-import { mat4 } from '../vendor/gl-matrix/index.js';
+import { mat4 } from 'gl-matrix';
 function compileShader(gl, type, src) {
       const s = gl.createShader(type);
       gl.shaderSource(s, src);

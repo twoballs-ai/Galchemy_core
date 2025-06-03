@@ -1,5 +1,5 @@
 // cameras/FollowCamera.ts
-import { mat4, vec3 } from "../../vendor/gl-matrix/index.js";
+import { mat4, vec3 } from "gl-matrix";
 import { BaseCamera }  from "./BaseCamera";
 import type { GameObject3D } from "../core/GameObjects/GameObject3D";
 

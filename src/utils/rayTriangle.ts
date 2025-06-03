@@ -1,5 +1,5 @@
 // src/utils/rayTriangle.ts
-import { vec3 } from "../vendor/gl-matrix/index.js";
+import { vec3 } from "gl-matrix";
 
 /**
  * Möller–Trumbore intersection алгоритм:

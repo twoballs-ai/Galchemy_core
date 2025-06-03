@@ -1,5 +1,5 @@
 // src/Renderer/helpers/TransformGizmo.ts
-import { mat4, vec3 } from "../../vendor/gl-matrix/index.js";
+import { mat4, vec3 } from "gl-matrix";
 import {
   AXIS_X_COLOR, AXIS_Y_COLOR, AXIS_Z_COLOR,
   RIGHT, UP, FORWARD

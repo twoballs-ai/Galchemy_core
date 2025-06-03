@@ -1,6 +1,6 @@
 // EditorSpawnPointView.ts
 import { GameObject3D } from '../primitives/GameObject3D.js';
-import { mat4 } from '../../vendor/gl-matrix/index.js';
+import { mat4 } from 'gl-matrix';
 
 export class EditorSpawnPointView extends GameObject3D {
   constructor(gl: WebGL2RenderingContext, targetSpawnPoint: GameObject3D) {

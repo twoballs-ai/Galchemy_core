@@ -1,6 +1,6 @@
 // src/GameObjects/primitives/3dPrimitives/EditorCharacterView.ts
 import { GameObject3D } from '../primitives/GameObject3D';
-import { mat4 }        from '../../vendor/gl-matrix';
+import { mat4 } from 'gl-matrix';
 import { createCapsuleGeometry } from '../primitives/3dPrimitives/createCapsuleGeometry';
 
 export class EditorCharacterView extends GameObject3D {

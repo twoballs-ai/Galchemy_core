@@ -1,4 +1,13 @@
-export function getSize(opts = {}, isRandom = false) {
+interface SizeOptions {
+  size?: number | [number, number] | { w: number, h: number };
+  w?: number;
+  h?: number;
+  width?: number;
+  height?: number;
+  minSize?: number | [number, number];
+  maxSize?: number | [number, number];
+}
+export function getSize(opts: SizeOptions = {}, isRandom = false) {
     // 1) FIXED через size
     if (opts.size != null) {
       if (Array.isArray(opts.size))         return opts.size;

@@ -3,7 +3,7 @@
     Полная копия трёх методов, которые раньше сидели внутри
     WebGLRenderer.  Никаких правок в логике не делали.
 */
-import { mat4 } from "../../vendor/gl-matrix/index.js";
+import { mat4 } from "gl-matrix";
 
 export function initShadowMap(ctx: any): void {
   const gl   = ctx.gl;

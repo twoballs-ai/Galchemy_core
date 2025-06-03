@@ -1,4 +1,4 @@
-import { vec3 } from '../../vendor/gl-matrix/index.js';
+import { vec3 } from 'gl-matrix';
 import type { CameraInterface } from '../../types/RendererTypes';
 import { COORD } from '../../core/CoordinateSystem';
 import { drawLines } from '../internal/drawLines'; // путь укажи свой

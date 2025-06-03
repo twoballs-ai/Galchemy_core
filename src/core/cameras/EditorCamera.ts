@@ -1,5 +1,5 @@
 import { BaseCamera } from './BaseCamera';
-import { mat4, vec3 } from '../../vendor/gl-matrix/index.js';
+import { mat4, vec3 } from 'gl-matrix';
 import { COORD } from "../../core/CoordinateSystem";
 
 export class EditorCamera extends BaseCamera {
