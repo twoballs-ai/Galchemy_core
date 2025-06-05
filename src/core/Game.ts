@@ -6,7 +6,7 @@ import { PreviewMode } from './modes/PreviewMode';
 import { patchObject, updateGeometry } from './helpers/objectUpdater';
 import { MaterialPreviewRenderer, MaterialMeta } from '../Renderer/MaterialPreviewRenderer';
 import { GameObject3D } from '../GameObjects/primitives/GameObject3D';
-
+import type { CubemapPaths } from "../GameObjects/SkyBox";
 // Реэкспорт
 export { GameObject3D } from '../GameObjects/primitives/GameObject3D';
 export { primitiveFactory } from '../GameObjects/PrimitiveFactory';
@@ -52,7 +52,9 @@ class GameFacade {
     this.core!.setDebugLogging(on);
     return this;
   }
-
+  setSkybox(paths: CubemapPaths) {
+    this.core?.loadSkybox(paths);
+  }
   physics({ gravity = 0 } = {}): this {
     this.core!.enablePhysics({ gravity });
     return this;

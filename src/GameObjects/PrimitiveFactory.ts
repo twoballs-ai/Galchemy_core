@@ -1,44 +1,37 @@
-// core/PrimitiveFactory.js
 import { GameObject3D }            from './primitives/GameObject3D';
 import { createSphereGeometry }    from './primitives/3dPrimitives/createSphereGeometry';
 import { createCubeGeometry }      from './primitives/3dPrimitives/createCubeGeometry';
 import { createCylinderGeometry }  from './primitives/3dPrimitives/createCylinderGeometry';
-import { createTerrainGeometry } from './primitives/3dPrimitives/createTerrainGeometry';
-import { GameObjectCamera } from './GameObjectCamera';
-import { GameObjectLight } from './GameObjectLight';
-// import defaultTextureSrc from '../assets/materials/metallic/Metal052C_1K-JPG/Metal052C_1K-JPG_Color.jpg';  // добавили!
-import { GameObjectCharacter } from './GameObjectCharacter';
-import { GameObjectSpawnPoint } from './GameObjectSpawnPoint.js';
-import { COORD } from '../core/CoordinateSystem';
+import { createTerrainGeometry }   from './primitives/3dPrimitives/createTerrainGeometry';
+import { GameObjectCamera }        from './GameObjectCamera';
+import { GameObjectLight }         from './GameObjectLight';
+// import defaultTextureSrc ... — УДАЛЕНО!
+import { GameObjectCharacter }     from './GameObjectCharacter';
+import { GameObjectSpawnPoint }    from './GameObjectSpawnPoint.js';
+import { COORD }                   from '../core/CoordinateSystem';
 // ── камеры ─────────────────────────────────────────────────────────
 import { GameCamera }        from '../core/cameras/GameCamera';
 import { FirstPersonCamera } from '../core/cameras/FirstPersonCamera';
 import { ThirdPersonCamera } from '../core/cameras/ThirdPersonCamera';
 import { TopDownCamera }     from '../core/cameras/TopDownCamera';
+
 const DEFAULT_PRIMITIVE_COLOR = '#7f7f7f';
 const DEFAULT_DISTANCE = 5;
 type CameraSubtype = 'game' | 'first' | 'third' | 'topdown';
 
 /** Опции, передаваемые при создании объекта-камеры. */
 interface CameraOpts {
-  /** Подтип камеры, влияет на то, какой класс будет создан. */
   subtype?: CameraSubtype;
-  /** Любые другие настройки камеры или GameObjectCamera
-   *  (position, fov, near, far, color, iconSize …). */
   [key: string]: unknown;
 }
 
-// хелпер для позиции «направо-назад» от цели
 function defaultPosition(distance = DEFAULT_DISTANCE) {
   return COORD.FORWARD.map(c => -c * distance) as [number,number,number];
 }
 
-// SPHERE
-
 class PrimitiveFactory {
   registry = {};
 
-  /** Регистрируем новый билд-коллбэк */
   register(type, builder) {
     this.registry[type] = builder;
   }
@@ -56,7 +49,7 @@ class PrimitiveFactory {
     }
     const merged = {
       color: DEFAULT_PRIMITIVE_COLOR,
-      texture: defaultTextureSrc, // ← дефолтная текстура
+      // texture: defaultTextureSrc, // УДАЛЕНО! Теперь texture только через opts
       ...opts,
     };
     return builder(gl, merged);
@@ -77,7 +70,7 @@ primitiveFactory.register(
       textureSrc: texture,
     })
 );
-// CUBE
+
 primitiveFactory.register(
   'cube',
   (gl, { size = 1, position, color, texture }) => {
@@ -91,19 +84,15 @@ primitiveFactory.register(
   }
 );
 
-// CYLINDER — ось «вверх» теперь COORD.UP
 primitiveFactory.register(
   'cylinder',
   (gl, { radius = 1, height = 2, position, color, texture }) => {
     const pos = position ?? defaultPosition();
     const mesh = createCylinderGeometry(radius, height);
 
-    // если исходная геометрия вдоль Y, а UP = Z, 
-    // поворачиваем её вокруг X на –90°:
     if (COORD.UP[2] === 1 && COORD.FORWARD[1] === 1) {
       // Y-up — не нужно
     } else if (COORD.UP[2] === 1) {
-      // Z-up: цилиндр вдоль Z
       for (let i = 0; i < mesh.positions.length; i += 3) {
         const y = mesh.positions[i+1];
         mesh.positions[i+1] = mesh.positions[i+2];
@@ -124,21 +113,18 @@ primitiveFactory.register(
   'camera',
   (gl: WebGL2RenderingContext, opts: CameraOpts = {}) => {
     const subtype: CameraSubtype = opts.subtype ?? 'game';
-
-    /* Таблица «подтип → класс»; as const фиксирует типы ключей. */
     const cameraMap = {
       game   : GameCamera,
       first  : FirstPersonCamera,
       third  : ThirdPersonCamera,
       topdown: TopDownCamera,
     } as const satisfies Record<CameraSubtype, new (...args: any[]) => any>;
-
-    /* Теперь subtype гарантированно совместим с ключами cameraMap. */
     const CameraClass = cameraMap[subtype];
 
     return new GameObjectCamera(gl, { ...opts, cameraClass: CameraClass });
   }
 );
+
 primitiveFactory.register(
   'terrain',
   (gl, {
@@ -146,12 +132,9 @@ primitiveFactory.register(
     position, color, texture, heightFn = (x,z) => 0
   }) => {
     const pos = position ?? [0,0,0];
-    // создаём «горизонтальную» плоскость в зависимости от UP_AXIS:
     const mesh = createTerrainGeometry({
       width, depth, seg,
-      // heightFn всегда принимает (u, v) в плоскости A×B
       heightFn: (u,v) => heightFn(u,v),
-      // передаём базисные векторы
       axisA: COORD.RIGHT,
       axisB: COORD.FORWARD
     });
@@ -163,6 +146,7 @@ primitiveFactory.register(
     });
   }
 );
+
 primitiveFactory.register('light', (gl, opts) => new GameObjectLight(gl, opts));
 
 primitiveFactory.register(

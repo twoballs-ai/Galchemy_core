@@ -12,7 +12,6 @@ import { drawCameraFrustum } from './helpers/FrustumHelper';
 import { COORD } from "../core/CoordinateSystem";
 import { Shader } from "./internal/Shader";
 import { Skybox } from "../GameObjects/SkyBox";
-// import { DaylightBoxPaths } from "../assets/skyBoxes/DaylightBox";
 export class WebGLRenderer extends Renderer {
   canvas: HTMLCanvasElement;
   gl: WebGL2RenderingContext;
@@ -46,6 +45,8 @@ export class WebGLRenderer extends Renderer {
   private uDepthLightVP!: WebGLUniformLocation;
   private aPos: number = -1;
   private aTexCoord: number = -1;
+  private skybox: Skybox | null = null;
+
 
   private plain_uModel!: WebGLUniformLocation;
   private plain_uView!: WebGLUniformLocation;
@@ -61,7 +62,7 @@ export class WebGLRenderer extends Renderer {
   this.canvas = graphicalContext.getCanvas();
   this.gl     = graphicalContext.getContext() as WebGL2RenderingContext;
   COORD.setGL(this.gl); // ✅ инициализируем систему координат
-  // this.skybox = new Skybox(this.gl, DaylightBoxPaths); 
+
   this._initWebGL(backgroundColor);
   this._initShaders();
 
@@ -82,6 +83,9 @@ export class WebGLRenderer extends Renderer {
   // Метод для установки core в рендерер
   setCore(core: Core) {
     this.core = core;
+  }
+  setSkybox(skybox: Skybox) {
+    this.skybox = skybox;
   }
 
   /** Настройка базового состояния WebGL */
@@ -191,10 +195,12 @@ render(scene: Scene, helpers = false): void {
 
   // 1) Очистка буфера
   this.clear();
-  this.skybox.render(
-    this.activeCamera.getView(),
-    this.activeCamera.getProjection()
-  );
+ if (this.skybox) {
+      this.skybox.render(
+        this.activeCamera.getView(),
+        this.activeCamera.getProjection()
+      );
+    }
 
   // 2) Подготовка шейдера
   this.defaultShader.use();

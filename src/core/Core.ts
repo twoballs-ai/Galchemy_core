@@ -2,8 +2,8 @@ import { SceneManager } from './SceneManager';
 import { EventEmitter } from '../utils/EventEmitter';
 import { GraphicalContext } from './GraphicalContext';
 import { EditorMode } from './modes/EditorMode';
-
-// 👇 Определяем интерфейсы здесь локально
+import { Skybox        } from "../GameObjects/SkyBox";
+import type { CubemapPaths } from "../GameObjects/SkyBox";
 interface CoreOptions {
   canvasId: string;
   width: number;
@@ -51,6 +51,9 @@ export class Core {
   private editorCamera!: ICamera;
   private lastTime: number = 0;
   private _running: boolean = false;
+
+  // Добавлено: хранение skybox локально
+  private skybox: Skybox | null = null;
 
   constructor({ canvasId, width, height, backgroundColor = '#000' }: CoreOptions) {
     this.gc = new GraphicalContext(canvasId, backgroundColor, width, height);
@@ -121,6 +124,18 @@ export class Core {
     this.renderer.selectedObject = obj;
   }
 
+  /* ───── Skybox API ───── */
+  loadSkybox(paths: CubemapPaths): void {
+    if (!(this.ctx instanceof WebGL2RenderingContext)) {
+      console.warn("Skybox: WebGL2 not available");
+      return;
+    }
+    this.skybox = new Skybox(this.ctx, paths);
+    if (typeof this.renderer.setSkybox === "function") {
+      this.renderer.setSkybox(this.skybox);
+    }
+  }
+
   start(): void {
     if (this._running) return;
     this._running = true;
@@ -166,7 +181,6 @@ export class Core {
     this.lastTime = ts;
 
     this.mode?.update?.(dt);
-
 
     this.scene.update(dt);
     this.renderer.render(this.scene, this.showHelpers);
