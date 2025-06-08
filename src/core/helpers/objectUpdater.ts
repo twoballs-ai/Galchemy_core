@@ -20,13 +20,27 @@ function applyCameraProps(camera: any, props: Partial<any>) {
   camera.update?.();
 }
 
-/**
- * Лёгкий патч: обновляет свойства объекта (x/y/z, цвет и т. д.) без пересоздания геометрии.
- */
+function patchTransform(obj, props) {
+  let dirty = false;
+
+  if (props.position)  { obj.position = [...props.position]; dirty = true; }
+  if (props.rotation)  { obj.rotation = [...props.rotation]; dirty = true; }
+  if (props.scale)     { obj.scale    = [...props.scale];    dirty = true; }
+
+  // Можно поддержать сразу оба типа: euler и кватернион
+  if (props.euler)     { obj.setEuler(props.euler); dirty = true; }
+  if (props.quaternion) { obj.setQuaternion(props.quaternion); dirty = true; }
+
+  if (dirty && typeof obj.updateWorldMatrix === "function")
+    obj.updateWorldMatrix();
+}
+
+// Улучшенный патч
 export function patchObject(core: Core, id: string, props: Partial<any>) {
   const obj = core.scene.objects.find(o => o.id === id);
   if (!obj) return;
 
+  patchTransform(obj, props);
   Object.assign(obj, props);
 
   if (obj.isCamera && obj.camera) {
@@ -35,7 +49,6 @@ export function patchObject(core: Core, id: string, props: Partial<any>) {
 
   core.renderer?.render(core.scene, core.debug);
 }
-
 /**
  * Обновление геометрии примитива при изменении ключевых параметров (например, радиус/размер).
  * Если не требуется пересоздание геометрии — делегирует в patchObject.
@@ -55,7 +68,6 @@ export function updateGeometry(core: Core, id: string, type: string, props: Part
         mesh = createSphereGeometry(r, s);
       }
       break;
-
     case 'cube':
       if (
         props.width !== undefined ||
@@ -68,7 +80,6 @@ export function updateGeometry(core: Core, id: string, type: string, props: Part
         mesh = createCubeGeometry(w, h, d);
       }
       break;
-
     case 'cylinder':
       if (props.radius !== undefined || props.height !== undefined) {
         const r = props.radius ?? obj.radius;
@@ -102,6 +113,7 @@ export function updateGeometry(core: Core, id: string, type: string, props: Part
 
   obj.mesh = mesh;
   obj.vertexCount = mesh.indices.length;
+  patchTransform(obj, props);
   Object.assign(obj, props);
 
   if (obj.isCamera && obj.camera) {

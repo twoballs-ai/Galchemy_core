@@ -14,6 +14,7 @@ import { GameCamera }        from '../core/cameras/GameCamera';
 import { FirstPersonCamera } from '../core/cameras/FirstPersonCamera';
 import { ThirdPersonCamera } from '../core/cameras/ThirdPersonCamera';
 import { TopDownCamera }     from '../core/cameras/TopDownCamera';
+import { GameObjectModel } from './GameObjectModel';
 
 const DEFAULT_PRIMITIVE_COLOR = '#7f7f7f';
 const DEFAULT_DISTANCE = 5;
@@ -71,6 +72,11 @@ primitiveFactory.register(
     })
 );
 
+primitiveFactory.register(
+  'model',
+  (gl, { mesh, position = [0, 0, 0], name, assetId }) =>
+    new GameObjectModel(gl, mesh, { position, name, assetId })
+);
 primitiveFactory.register(
   'cube',
   (gl, { size = 1, position, color, texture }) => {

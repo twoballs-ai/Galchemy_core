@@ -1,11 +1,10 @@
 import { Core } from './Core';
 import { primitiveFactory } from '../GameObjects/PrimitiveFactory'; // фабрика примитивов
-import { loadGLB } from '../utils/GLTFLoader';
+import { extractFirstMesh, extractMeshes, importGLB, loadGLB } from '../utils/GLTFLoader';
 import { EditorMode } from './modes/EditorMode';
 import { PreviewMode } from './modes/PreviewMode';
 import { patchObject, updateGeometry } from './helpers/objectUpdater';
 import { MaterialPreviewRenderer, MaterialMeta } from '../Renderer/MaterialPreviewRenderer';
-import { GameObject3D } from '../GameObjects/primitives/GameObject3D';
 import type { CubemapPaths } from "../GameObjects/SkyBox";
 // Реэкспорт
 export { GameObject3D } from '../GameObjects/primitives/GameObject3D';
@@ -122,15 +121,19 @@ class GameFacade {
   }
 
   /* -------- загрузка glTF ----------------------------------- */
+async spawn3DModel(
+  path: string,
+  position: [number, number, number] = [0, 0, 0],
+  name?: string,
+  assetId?: string
+) {
+  const glObj = await importGLB(this.core!.ctx as WebGL2RenderingContext, path, {
+    position, name, assetId
+  });
 
-  async spawn3DModel(path: string, position: [number, number, number] = [0, 0, 0]): Promise<any> {
-    const { json, binary } = await loadGLB(path);
-    const mesh = extractFirstMesh(json, binary, this.core!.ctx);
-    const go = new GameObject3D({ mesh, position });
-    this.core!.add(go);
-    return go;
-  }
-
+  this.core!.add(glObj);
+  return glObj;
+}
   /* -------- управление циклом -------------------------------- */
 
   start(): void {

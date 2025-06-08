@@ -30,6 +30,13 @@ interface IGameObject {
   type: string;
   isEditorMode?: boolean;
   isCamera?: boolean;
+  // Новое:
+  position?: [number, number, number];
+  rotation?: [number, number, number] | [number, number, number, number]; // Эйлер или кватернион
+  scale?: [number, number, number];
+  worldMatrix?: Float32Array; // mat4
+  parent?: IGameObject | null;
+  children?: Set<IGameObject>;
   resize?(w: number, h: number): void;
 }
 

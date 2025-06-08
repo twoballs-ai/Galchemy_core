@@ -41,6 +41,7 @@ export class EditorMode extends BaseMode {
           object
         );
         helper.isEditorOnly = true;
+        
         core.scene.add(helper);
       }
     };

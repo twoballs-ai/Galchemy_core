@@ -1,8 +1,20 @@
+import { buildGameObjectFromGLB } from "./buildGameObjectFromGLB";
+
 export async function loadGLB(url: string): Promise<{ json: any; binary: ArrayBuffer | null }> {
   const response = await fetch(url);
   const arrayBuffer = await response.arrayBuffer();
   const data = parseGLB(arrayBuffer);
   return data;
+}
+
+/** ✨ Единая точка: построить сразу GameObject(-ы) */
+export async function importGLB(
+  gl: WebGL2RenderingContext,
+  url: string,
+  opts: { position?: [number, number, number]; name?: string; assetId?: string } = {}
+) {
+  const { json, binary } = await loadGLB(url);
+  return buildGameObjectFromGLB(gl, json as GLTF, binary!, opts);
 }
 
 function parseGLB(buffer: ArrayBuffer): { json: any; binary: ArrayBuffer | null } {

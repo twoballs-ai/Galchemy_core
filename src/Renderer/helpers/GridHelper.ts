@@ -54,7 +54,7 @@ export function drawGrid(ctx: any) {
   }
 
   // Основные линии сетки (серые)
-  drawLines(gl, -1, null!, new Float32Array(gridLines), [0.4, 0.4, 0.4, 1], ctx);
+  drawLines(gl, -1, null!, new Float32Array(gridLines), [0.4, 0.4, 0.4, 0.4], ctx);
 
   // Оси
   drawLines(gl, -1, null!, new Float32Array(xAxis), COORD.AXIS_X_COLOR, ctx);

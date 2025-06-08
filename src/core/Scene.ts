@@ -41,7 +41,16 @@ export class Scene implements IScene {
   }
 
   update(deltaTime: number) {
-    this.objects.forEach(obj => obj.update?.(deltaTime));
+    // 1) логика / анимация
+    this.objects.forEach(o => o.update?.(deltaTime));
+
+    // 2) пересчёт transform-ов **только корневых**
+    this.objects.forEach(root => {
+      if (!('parent' in root) || root.parent) return; // есть parent → не корень
+      if (typeof (root as any).updateWorldMatrix === 'function') {
+        (root as any).updateWorldMatrix();            // рекурсивно вниз по дереву
+     }
+   });
   }
 
   setActiveCamera(camera: ICamera) {

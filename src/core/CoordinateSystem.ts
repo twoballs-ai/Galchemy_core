@@ -1,4 +1,4 @@
-import { mat4, vec3 } from "gl-matrix";
+import { mat4, quat, vec3 } from "gl-matrix";
 import {
   HANDEDNESS, UP_AXIS, CLIP_RANGE,
   RIGHT, FORWARD, UP
@@ -86,5 +86,13 @@ export class CoordinateSystem {
     };
   }
 }
-
+export function composeMatrix(
+  position: vec3,
+  rotation: quat,   // rotation в виде кватерниона!
+  scale: vec3
+): mat4 {
+  const m = mat4.create();
+  mat4.fromRotationTranslationScale(m, rotation, position, scale);
+  return m;
+}
 export const COORD = new CoordinateSystem();

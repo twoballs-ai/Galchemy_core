@@ -95,6 +95,8 @@ export class WebGLRenderer extends Renderer {
     gl.clearColor(r, g, b, 1);
     gl.enable(gl.DEPTH_TEST);
     gl.viewport(0, 0, this.canvas.width, this.canvas.height);
+        gl.enable(gl.BLEND);
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
   }
 
   /** Конвертация hex → [r, g, b] */
@@ -193,14 +195,22 @@ export class WebGLRenderer extends Renderer {
 render(scene: Scene, helpers = false): void {
   const gl = this.gl;
 
+  // --- 0) Пересчёт worldMatrix только для root-объектов ---
+  for (const o of scene.objects) {
+    if (o.parent) continue;
+    if (typeof o.updateWorldMatrix === "function") {
+      o.updateWorldMatrix();
+    }
+  }
+
   // 1) Очистка буфера
   this.clear();
- if (this.skybox) {
-      this.skybox.render(
-        this.activeCamera.getView(),
-        this.activeCamera.getProjection()
-      );
-    }
+  if (this.skybox) {
+    this.skybox.render(
+      this.activeCamera.getView(),
+      this.activeCamera.getProjection()
+    );
+  }
 
   // 2) Подготовка шейдера
   this.defaultShader.use();
@@ -224,8 +234,13 @@ render(scene: Scene, helpers = false): void {
     gl.uniformMatrix4fv(this.uDepthLightVP, false, lightVP);
 
     for (const o of scene.objects) {
-      if (typeof o.renderWebGL3D === 'function') {
-        o.renderWebGL3D(gl, this.depthProgram, this.uDepthModel, null, null, null);
+      if (o.parent) continue; // только root!
+      if (typeof o.renderWebGL3D === "function") {
+        o.renderWebGL3D(
+          gl, this.shaderProgram,
+          this.uModel, this.uAmbientColor,
+          this.uUseTexture, this.uNormalMatrix
+        );
       }
     }
 
@@ -244,15 +259,15 @@ render(scene: Scene, helpers = false): void {
   }
 
   const MAX_LIGHTS = 16;
-const lightPositions = new Float32Array(3 * MAX_LIGHTS);
-const lightColors = new Float32Array(3 * MAX_LIGHTS);
-lights.forEach((l, i) => {
-  const [x, y, z] = l.worldPosition;
-  const [r, g, b] = l.color.slice(0, 3);
-  const intensity = typeof l.intensity === "number" ? l.intensity : 1.0;
-  lightPositions.set([x, y, z], i * 3);
-  lightColors.set([r * intensity, g * intensity, b * intensity], i * 3);
-});
+  const lightPositions = new Float32Array(3 * MAX_LIGHTS);
+  const lightColors = new Float32Array(3 * MAX_LIGHTS);
+  lights.forEach((l, i) => {
+    const [x, y, z] = l.worldPosition;
+    const [r, g, b] = l.color.slice(0, 3);
+    const intensity = typeof l.intensity === "number" ? l.intensity : 1.0;
+    lightPositions.set([x, y, z], i * 3);
+    lightColors.set([r * intensity, g * intensity, b * intensity], i * 3);
+  });
 
   if (lights.length > 0) {
     const uLightPositionsLoc = gl.getUniformLocation(this.shaderProgram, 'uLightPositions');
@@ -272,8 +287,9 @@ lights.forEach((l, i) => {
   gl.uniformMatrix4fv(this.uView, false, this.activeCamera.getView());
   gl.uniformMatrix4fv(this.uProj, false, this.activeCamera.getProjection());
 
-  // 6) Основные объекты
+  // 6) Основные объекты — только root!
   for (const o of scene.objects) {
+    if (o.parent) continue;
     if (typeof o.renderWebGL3D === "function") {
       o.renderWebGL3D(
         gl,
@@ -323,9 +339,8 @@ lights.forEach((l, i) => {
   // 9) Трансформ-гизмо
   this.transformGizmo.draw(this);
   this.spriteRenderer.flush();
-
-
 }
+
   resize(w: number, h: number): void {
     this.gl.viewport(0, 0, w, h);
     this._setupProjection();

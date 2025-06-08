@@ -1,155 +1,143 @@
-import { mat4 } from "gl-matrix";
+import { mat4, quat, vec3 } from 'gl-matrix';
+import { GameObjectModel } from '../GameObjects/GameObjectModel';
+import type { GLTF } from './gltfTypes';
 
-// Типы для GLTF структуры
-interface GLTFBufferView {
-  buffer: number;
-  byteOffset?: number;
-  byteLength: number;
-  byteStride?: number;
-  target?: number;
+const COMPONENT_BYTES = { 5120: 1, 5121: 1, 5122: 2, 5123: 2, 5125: 4, 5126: 4 };
+
+function numComponents(type: string) {
+  return { SCALAR: 1, VEC2: 2, VEC3: 3, VEC4: 4, MAT2: 4, MAT3: 9, MAT4: 16 }[type]!;
 }
 
-interface GLTFAccessor {
-  bufferView: number;
-  byteOffset?: number;
-  componentType: number;
-  count: number;
-  type: string;
-  max?: number[];
-  min?: number[];
+function readAccessor(json: GLTF, binary: ArrayBuffer, accessorIndex: number) {
+  const acc = json.accessors[accessorIndex];
+  const view = json.bufferViews[acc.bufferView];
+  const off = (view.byteOffset ?? 0) + (acc.byteOffset ?? 0);
+  const len = acc.count * numComponents(acc.type) * COMPONENT_BYTES[acc.componentType];
+  const slice = binary.slice(off, off + len);
+  switch (acc.componentType) {
+    case 5123: return new Uint16Array(slice);
+    case 5125: return new Uint32Array(slice);
+    case 5126: return new Float32Array(slice);
+    default :  throw new Error('Unsupported component type');
+  }
 }
 
-interface GLTFMeshPrimitive {
-  attributes: {
-    POSITION: number;
-    NORMAL?: number;
-    TEXCOORD_0?: number;
-  };
-  indices: number;
+function quatToEuler([x, y, z, w]: number[]): [number, number, number] {
+  // Стандартная функция перевода кватерниона в эйлеры
+  const ysqr = y * y;
+  const t0 = +2.0 * (w * x + y * z);
+  const t1 = +1.0 - 2.0 * (x * x + ysqr);
+  const roll = Math.atan2(t0, t1);
+  let t2 = +2.0 * (w * y - z * x);
+  t2 = t2 > 1 ? 1 : t2;
+  t2 = t2 < -1 ? -1 : t2;
+  const pitch = Math.asin(t2);
+  const t3 = +2.0 * (w * z + x * y);
+  const t4 = +1.0 - 2.0 * (ysqr + z * z);
+  const yaw = Math.atan2(t3, t4);
+  return [roll, pitch, yaw];
 }
 
-interface GLTFMesh {
-  primitives: GLTFMeshPrimitive[];
-  name?: string;
-}
-
-interface GLTF {
-  accessors: GLTFAccessor[];
-  bufferViews: GLTFBufferView[];
-  meshes: GLTFMesh[];
-}
+// ----------- ГЛАВНАЯ ФУНКЦИЯ -----------
 
 export function buildGameObjectFromGLB(
   gl: WebGL2RenderingContext,
-  json: GLTF, // ✅ типизированный JSON
-  binary: ArrayBuffer
-) {
-  const meshDef = json.meshes[0];
-  const prim = meshDef.primitives[0];
+  json: GLTF,
+  binary: ArrayBuffer,
+  { position = [0, 0, 0], name = 'GLTFModel', assetId = '' } = {}
+): GameObjectModel
+{
+  function buildFromNode(nodeIdx: number): GameObjectModel {
+    const node = json.nodes[nodeIdx];
+    const t = node.translation ?? [0, 0, 0];
+    const r = node.rotation ?? [0, 0, 0, 1];
+    const s = node.scale ?? [1, 1, 1];
 
-  const positionAccessorIndex = prim.attributes.POSITION;
-  const normalAccessorIndex = prim.attributes.NORMAL;
-  const texcoordAccessorIndex = prim.attributes.TEXCOORD_0;
-  const indicesAccessorIndex = prim.indices;
+    let thisObj: GameObjectModel;
 
-  function readAccessor(accessorIndex: number | undefined): Float32Array | Uint16Array | null {
-    if (accessorIndex === undefined) return null;
+    if (typeof node.mesh === 'number') {
+      const meshDef = json.meshes[node.mesh];
+      // Только первый примитив, если их несколько — можно добавить перебор
+      if (meshDef.primitives.length === 1) {
+        const prim = meshDef.primitives[0];
+        const positions = readAccessor(json, binary, prim.attributes.POSITION) as Float32Array;
+        const normals   = prim.attributes.NORMAL      !== undefined ? readAccessor(json, binary, prim.attributes.NORMAL)      as Float32Array : undefined;
+        const texCoords = prim.attributes.TEXCOORD_0  !== undefined ? readAccessor(json, binary, prim.attributes.TEXCOORD_0)  as Float32Array : undefined;
+        const indices   = readAccessor(json, binary, prim.indices);
 
-    const accessor = json.accessors[accessorIndex];
-    const bufferView = json.bufferViews[accessor.bufferView];
-    const byteOffset = (bufferView.byteOffset || 0) + (accessor.byteOffset || 0);
-    const byteLength = accessor.count * getNumComponents(accessor.type) * getComponentSize(accessor.componentType);
-    const slice = binary.slice(byteOffset, byteOffset + byteLength);
+        const mesh = { positions, indices, normals, texCoords };
+        thisObj = new GameObjectModel(gl, mesh, {
+          position: t,
+          rotation: quatToEuler(r),
+          scale: s,
+          name: node.name ?? meshDef.name ?? name,
+          assetId,
+        });
+      } else {
+        // Мульти-примитивная меш-сборка
+        thisObj = new GameObjectModel(gl, null, {
+          position: t,
+          rotation: quatToEuler(r),
+          scale: s,
+          name: node.name ?? meshDef.name ?? name,
+          assetId,
+        });
+        meshDef.primitives.forEach((prim, i) => {
+          const positions = readAccessor(json, binary, prim.attributes.POSITION) as Float32Array;
+          const normals   = prim.attributes.NORMAL      !== undefined ? readAccessor(json, binary, prim.attributes.NORMAL)      as Float32Array : undefined;
+          const texCoords = prim.attributes.TEXCOORD_0  !== undefined ? readAccessor(json, binary, prim.attributes.TEXCOORD_0)  as Float32Array : undefined;
+          const indices   = readAccessor(json, binary, prim.indices);
 
-    switch (accessor.componentType) {
-      case 5123: return new Uint16Array(slice); // UNSIGNED_SHORT
-      case 5126: return new Float32Array(slice); // FLOAT
-      default: throw new Error('Unsupported accessor type');
-    }
-  }
-
-  function getNumComponents(type: string): number {
-    return {
-      SCALAR: 1,
-      VEC2: 2,
-      VEC3: 3,
-      VEC4: 4,
-      MAT4: 16,
-    }[type] ?? (() => { throw new Error(`Unknown accessor type: ${type}`); })();
-  }
-
-  function getComponentSize(componentType: number): number {
-    return {
-      5123: 2, // UNSIGNED_SHORT
-      5126: 4, // FLOAT
-    }[componentType] ?? (() => { throw new Error(`Unknown component type: ${componentType}`); })();
-  }
-
-  const positions = readAccessor(positionAccessorIndex) as Float32Array;
-  const normals = readAccessor(normalAccessorIndex) as Float32Array | null;
-  const texCoords = readAccessor(texcoordAccessorIndex) as Float32Array | null;
-  const indices = readAccessor(indicesAccessorIndex) as Uint16Array;
-
-  // Создание VBO/IBO
-  const positionBuffer = gl.createBuffer()!;
-  gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-  gl.bufferData(gl.ARRAY_BUFFER, positions, gl.STATIC_DRAW);
-
-  const indexBuffer = gl.createBuffer()!;
-  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
-  gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, indices, gl.STATIC_DRAW);
-
-  let texCoordBuffer: WebGLBuffer | null = null;
-  if (texCoords) {
-    texCoordBuffer = gl.createBuffer()!;
-    gl.bindBuffer(gl.ARRAY_BUFFER, texCoordBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, texCoords, gl.STATIC_DRAW);
-  }
-
-  return {
-    id: crypto.randomUUID(),
-    type: 'mesh',
-    name: meshDef.name || 'GLTFObject',
-    position: [0, 0, 0],
-    rotation: [0, 0, 0],
-    scale: [1, 1, 1],
-    vertexBuffer: positionBuffer,
-    indexBuffer: indexBuffer,
-    texCoordBuffer: texCoordBuffer,
-    vertexCount: indices.length,
-    mesh: {
-      positions,
-      indices,
-      normals,
-      texCoords,
-    },
-    renderWebGL3D(
-      gl: WebGL2RenderingContext,
-      shaderProgram: WebGLProgram,
-      uModel: WebGLUniformLocation,
-      uAmbient: WebGLUniformLocation | null,
-      uUseTexture: WebGLUniformLocation | null,
-      uNormalMatrix: WebGLUniformLocation | null
-    ) {
-      const modelMatrix = mat4.create(); // можно добавить transform
-      gl.uniformMatrix4fv(uModel, false, modelMatrix);
-      if (uAmbient) gl.uniform3fv(uAmbient, [0.6, 0.6, 0.6]);
-      if (uUseTexture) gl.uniform1i(uUseTexture, 0); // без текстур
-
-      gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffer);
-      const aPos = gl.getAttribLocation(shaderProgram, 'aVertexPosition');
-      gl.vertexAttribPointer(aPos, 3, gl.FLOAT, false, 0, 0);
-      gl.enableVertexAttribArray(aPos);
-
-      if (this.texCoordBuffer) {
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.texCoordBuffer);
-        const aUV = gl.getAttribLocation(shaderProgram, 'aTexCoord');
-        gl.vertexAttribPointer(aUV, 2, gl.FLOAT, false, 0, 0);
-        gl.enableVertexAttribArray(aUV);
+          const mesh = { positions, indices, normals, texCoords };
+          const childObj = new GameObjectModel(gl, mesh, {
+            position: [0, 0, 0], // все примитивы должны быть на месте
+            rotation: [0, 0, 0],
+            scale: [1, 1, 1],
+            name: meshDef.name ? `${meshDef.name}_p${i}` : `Primitive${i}`,
+            assetId,
+          });
+          thisObj.addChild(childObj);
+        });
       }
-
-      gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.indexBuffer);
-      gl.drawElements(gl.TRIANGLES, this.vertexCount, gl.UNSIGNED_SHORT, 0);
+    } else {
+      // Просто группа, без меша
+      thisObj = new GameObjectModel(gl, null, {
+        position: t,
+        rotation: quatToEuler(r),
+        scale: s,
+        name: node.name ?? name,
+        assetId,
+      });
     }
-  };
+
+    // Дети
+    if (node.children) {
+      for (const childIdx of node.children) {
+        const childObj = buildFromNode(childIdx);
+        thisObj.addChild(childObj);
+      }
+    }
+
+    return thisObj;
+  }
+
+  // Стартуем с корневых nodes
+  const sceneIdx = json.scene ?? 0;
+  const scene = json.scenes[sceneIdx];
+  let root: GameObjectModel;
+
+  if (scene.nodes.length === 1) {
+    root = buildFromNode(scene.nodes[0]);
+    // Можно явно подправить root (например, если указываем позицию модели при импорте)
+    root.position = position;
+    root.name = name;
+    root.assetId = assetId;
+  } else {
+    root = new GameObjectModel(gl, null, { position, name, assetId });
+    for (const nodeIdx of scene.nodes) {
+      root.addChild(buildFromNode(nodeIdx));
+    }
+  }
+
+  return root;
 }
