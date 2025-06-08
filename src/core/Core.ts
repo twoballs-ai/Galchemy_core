@@ -45,7 +45,7 @@ export class Core {
   public canvas: HTMLCanvasElement;
   public ctx: WebGL2RenderingContext | CanvasRenderingContext2D;
   public renderer: any;
-
+private resizeObs: ResizeObserver | null = null;  
   public sceneManager: SceneManager;
   public emitter: EventEmitter;
 
@@ -92,12 +92,27 @@ export class Core {
     objs.forEach(o => this.scene.add(o));
   }
 
-  resize(w: number, h: number): void {
-    this.gc.resize(w, h);
-    this.renderer.resize?.(w, h);
-    this.camera?.resize?.(w, h);
+ resize(w: number, h: number): void {
+    this.gc.resize(w, h);          // GraphicalContext сам вызовет renderer.resize
+    this.camera?.resize?.(w, h);   // если камерe нужно своё пересчитывание
   }
+ /* ② Подключаем наблюдатель к parent-элементу canvas */
+  attachResizeObserver(canvas: HTMLCanvasElement): void {
+    // сбрасываем старый
+    this.resizeObs?.disconnect();
 
+    const handle = () => {
+      const p = canvas.parentElement;
+      if (p) this.resize(p.clientWidth, p.clientHeight);
+    };
+
+    this.resizeObs = new ResizeObserver(handle);
+
+    const parent = canvas.parentElement;
+    if (parent) this.resizeObs.observe(parent);
+
+    handle();      // первичная инициализация
+  }
   setMode(modeInstance: IMode): void {
     if (this.mode?.exit) this.mode.exit();
     this.mode = modeInstance;
@@ -151,6 +166,7 @@ export class Core {
 
   stop(): void {
     this._running = false;
+    this.resizeObs?.disconnect();
   }
 
   addSceneObjects(sceneName: string, objs: any[], shapeFactory: Record<string, (options: any) => IGameObject>): void {
