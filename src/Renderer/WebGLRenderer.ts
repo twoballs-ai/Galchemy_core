@@ -60,7 +60,7 @@ export class WebGLRenderer extends Renderer {
 
   super(graphicalContext.getContext(), backgroundColor);
 
-  this.canvas = graphicalContext.getCanvas();
+  this.canvas = graphicalContext.getRenderCanvas?.() ?? graphicalContext.getCanvas();
   this.gl     = graphicalContext.getContext() as WebGL2RenderingContext;
   COORD.setGL(this.gl); // ✅ инициализируем систему координат
 
