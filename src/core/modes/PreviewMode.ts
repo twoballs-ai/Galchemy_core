@@ -1,22 +1,7 @@
 import { BaseMode } from './BaseMode';
 import { Core } from '../Core'; // обязательно импорт Core
 import { GameCamera } from '../cameras/GameCamera'; // обязательно импорт GameCamera
-
-// 👇 Определим базовые типы тут, без отдельного файла
-interface ICamera {
-  id: string;
-  type: string;
-  projection: Float32Array;
-  update(): void;
-}
-
-interface IGameObject {
-  id: string;
-  type: string;
-  isCamera?: boolean;
-  camera?: ICamera;
-  isEditorMode?: boolean;
-}
+import type { ICamera, IGameObject } from '../../types/CoreTypes';
 
 export class PreviewMode extends BaseMode {
   enter(core: Core): void {
@@ -30,9 +15,9 @@ export class PreviewMode extends BaseMode {
     );
     const cameraObject = cameras[0];
 
-  if (cameraObject.camera) {
-  core.setActiveCamera(cameraObject.camera);
-} else {
+    if (cameraObject?.camera) {
+      core.setActiveCamera(cameraObject.camera);
+    } else {
       // Если ни одной камеры нет — создать дефолтную
       const defaultCam = new GameCamera(core.canvas.width, core.canvas.height) as ICamera;
       core.setActiveCamera(defaultCam);

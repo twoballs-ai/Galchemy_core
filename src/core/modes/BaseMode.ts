@@ -12,7 +12,7 @@ export class BaseMode {
     // Можно переопределить в потомках
   }
 
-  update(): void {
+  update(_dt?: number): void {
     // Можно переопределить в потомках
   }
 }
