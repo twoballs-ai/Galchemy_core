@@ -9,6 +9,7 @@ interface CoreOptions {
   width: number;
   height: number;
   backgroundColor?: string;
+  rendererType?: 'webgl' | 'webgpu';
 }
 
 interface IMode {
@@ -63,8 +64,8 @@ private resizeObs: ResizeObserver | null = null;
   // Добавлено: хранение skybox локально
   private skybox: Skybox | null = null;
 
-  constructor({ canvasId, width, height, backgroundColor = '#000' }: CoreOptions) {
-    this.gc = new GraphicalContext(canvasId, backgroundColor, width, height);
+  constructor({ canvasId, width, height, backgroundColor = '#000', rendererType = 'webgl' }: CoreOptions) {
+    this.gc = new GraphicalContext(canvasId, backgroundColor, width, height, rendererType);
     this.canvas = this.gc.getCanvas();
     this.ctx = this.gc.getContext();
 

@@ -1,9 +1,10 @@
 // src/core/GraphicalContext.js
 import { WebGLRenderer } from '../Renderer/WebGLRenderer';
+import { WebGPURenderer } from '../Renderer/WebGPURenderer';
 import { ColorMixin }    from '../utils/ColorMixin';
 
 export class GraphicalContext {
-  constructor(canvasId, background = '#000', width = 800, height = 600) {
+  constructor(canvasId, background = '#000', width = 800, height = 600, rendererType = 'webgl') {
     /* Canvas */
     this.canvas = document.getElementById(canvasId);
     if (!this.canvas) throw new Error(`Canvas "${canvasId}" not found`);
@@ -14,7 +15,9 @@ export class GraphicalContext {
   if (!this.ctx) throw new Error('WebGL2 is not supported in this browser');
       /* Цвет очистки */
     const clearColor = ColorMixin(background);
-    this.renderer    = new WebGLRenderer(this, clearColor);
+    this.renderer    = rendererType === 'webgpu'
+      ? new WebGPURenderer(this, clearColor)
+      : new WebGLRenderer(this, clearColor);
   }
 
   getContext()  { return this.ctx;    }
