@@ -6,14 +6,12 @@ import { EditorCharacterView }       from '../../GameObjects/views/EditorCharact
 import type { Core, IGameObject }   from '../../types/CoreTypes';
 
 export class EditorMode extends BaseMode {
-  private core!: Core;
   private camera!: EditorCamera;
   private controls!: EditorControls;
   private onObjectAddedHandler!: (payload: { scene: string; object: IGameObject }) => void;
 
   enter(core: Core) {
     super.enter(core);
-    this.core = core;
 
     /* helpers / отладка */
     core.setShowHelpers(true);

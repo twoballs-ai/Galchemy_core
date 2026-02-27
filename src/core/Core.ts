@@ -50,6 +50,7 @@ private resizeObs: ResizeObserver | null = null;
   public emitter: EventEmitter;
 
   public actionBindings: any[] = [];
+  public physics: { gravity: number; enabled: boolean } = { gravity: 0, enabled: false };
 
   public debugLogging: boolean = false;
   public showHelpers: boolean = false;
@@ -86,6 +87,11 @@ private resizeObs: ResizeObserver | null = null;
 
   setShowHelpers(on: boolean): void {
     this.showHelpers = !!on;
+  }
+
+  enablePhysics(options: { gravity?: number } = {}): void {
+    this.physics.enabled = true;
+    this.physics.gravity = options.gravity ?? 0;
   }
 
   add(...objs: IGameObject[]): void {

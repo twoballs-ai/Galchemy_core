@@ -12,6 +12,8 @@ import { drawCameraFrustum } from './helpers/FrustumHelper';
 import { COORD } from "../core/CoordinateSystem";
 import { Shader } from "./internal/Shader";
 import { Skybox } from "../GameObjects/SkyBox";
+import type { Core } from "../core/Core";
+import type { IGameObject } from "../types/CoreTypes";
 export class WebGLRenderer extends Renderer {
   canvas: HTMLCanvasElement;
   gl: WebGL2RenderingContext;
@@ -19,8 +21,7 @@ export class WebGLRenderer extends Renderer {
   // Сетка
   gridSize = 10;
   gridStep = 1;
-  public selectedObject: SceneObject | null = null;
-  private skybox!: Skybox;
+  public selectedObject: IGameObject | null = null;
   // Шейдеры и их локации
   private uNormalMatrix!: WebGLUniformLocation;
   private uLightPos!: WebGLUniformLocation;
