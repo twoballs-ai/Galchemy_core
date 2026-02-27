@@ -25,12 +25,13 @@ class GameFacade {
 
   /* -------- init / режимы ------------------------------------ */
 
-  init({ canvasId, w, h, bg = '#000' }: { canvasId: string; w: number; h: number; bg?: string }): this {
+  init({ canvasId, w, h, bg = '#000', renderer = 'webgl' }: { canvasId: string; w: number; h: number; bg?: string; renderer?: 'webgl' | 'webgpu' }): this {
     this.core = new Core({
       canvasId,
       width: w,
       height: h,
       backgroundColor: bg,
+      rendererType: renderer,
     });
 
     (this.core as any).game = this; // ссылка «обратно»
